@@ -1,28 +1,24 @@
 package org.rootio.tools.persistence;
 
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabase.CursorFactory;
+import android.database.sqlite.SQLiteDatabaseLockedException;
+import android.util.Log;
+import org.rootio.RootioApp;
+import org.rootio.handset.R;
+import org.rootio.tools.utils.Utils;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.rootio.RootioApp;
-import org.rootio.handset.R;
-import org.rootio.tools.utils.Utils;
-
-import android.app.Application;
-import android.content.ContentValues;
-import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteCantOpenDatabaseException;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteDatabase.CursorFactory;
-import android.database.sqlite.SQLiteDatabaseLockedException;
-import android.database.sqlite.SQLiteException;
-import android.util.Log;
-
 public class DBAgent {
-    private static Context context  = RootioApp.getInstance().getApplicationContext();
-    private static String databaseName = context.getFilesDir() + "/rootio.sqlite";
+
+    private static String databaseName = Configuration.getFilesDir() + "/rootio.sqlite";
     //private static final Context context;
 
 //    public DBAgent(Context context) {
