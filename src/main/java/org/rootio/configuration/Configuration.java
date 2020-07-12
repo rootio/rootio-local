@@ -6,8 +6,12 @@ import java.util.Properties;
 public class Configuration {
     private Properties properties;
 
-    Configuration(String fileLocation) {
-
+    Configuration(String fileLocation) throws FileNotFoundException {
+        try {
+            loadProperties(fileLocation);
+        } catch (FileNotFoundException e) {
+            throw(e);
+        }
     }
 
     private void loadProperties(String fileLocation) throws FileNotFoundException {
