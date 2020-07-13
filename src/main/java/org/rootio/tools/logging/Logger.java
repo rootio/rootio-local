@@ -1,26 +1,24 @@
 package org.rootio.tools.logging;
 
-import android.content.BroadcastReceiver;
-import android.content.ContentValues;
-import android.content.Context;
-import android.content.Intent;
-
+import org.rootio.messaging.BroadcastReceiver;
+import org.rootio.messaging.Message;
 import org.rootio.tools.persistence.DBAgent;
 import org.rootio.tools.utils.Utils;
+
+import java.util.HashMap;
 
 public class Logger extends BroadcastReceiver {
 
 
-    private long log(Context context, Intent intent)
+    private long log(LogRecord record)
     {
-        Utils.toastOnScreen("received logging event..", context);
         try {
-            ContentValues values = new ContentValues();
-            values.put("category", intent.getStringExtra("category"));
-            values.put("argument", intent.getStringExtra("argument"));
-            values.put("event", intent.getStringExtra("event"));
+            HashMap<String, Object> values = new HashMap();
+            values.put("category", record.getCategory());
+            values.put("argument", record.getArgument());
+            values.put("event", record.getEvent());
             values.put("eventdate", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
-            return DBAgent.saveData("activitylog", null, values);
+            return DBAgent.saveData("activitylog", values);
         }
         catch (Exception ex)
         {
@@ -30,7 +28,33 @@ public class Logger extends BroadcastReceiver {
     }
 
     @Override
-    public void onReceive(Context context, Intent intent) {
-        this.log(context, intent);
+    public void onReceive(Message m) {
+        this.log(new LogRecord(m.getCategory(), m.getArgument(), m.getEvent()));
+    }
+
+    public class LogRecord
+    {
+        private final String category, argument, event;
+
+        public LogRecord(String category, String argument, String event)
+        {
+            this.category = category;
+            this.argument = argument;
+            this.event = event;
+        }
+
+        public String getCategory() {
+            return category;
+        }
+
+        public String getArgument() {
+            return argument;
+        }
+
+        public String getEvent() {
+            return event;
+        }
     }
 }
+
+
