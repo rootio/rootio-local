@@ -1,117 +1,42 @@
 package org.rootio.tools.utils;
 
-import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.ContextWrapper;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
-import android.os.Handler;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.widget.Toast;
-
 import org.json.JSONObject;
+import org.rootio.configuration.Configuration;
 import org.rootio.handset.R;
+import org.rootio.messaging.Message;
 import org.rootio.tools.persistence.DBAgent;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.*;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
-@SuppressLint("SimpleDateFormat")
+
 public class Utils {
 
-    private static Handler handler = new Handler();
 
-    public static void setContext(Context context) {
-    }
-
-
-    public static Long getEventTimeId(Context parent, long programId, Date scheduleDate, int duration) {
+    public static Long getEventTimeId(long programId, Date scheduleDate, int duration) throws SQLException {
         String tableName = "eventtime";
-        String[] columns = new String[]{"id"};
-        String whereClause = "programid = ? and duration = ? and scheduledate = ?";
-        String[] whereArgs = new String[]{String.valueOf(programId), String.valueOf(duration), Utils.getDateString(scheduleDate, "yyyy-MM-dd HH:mm:ss")};
+        List<String> columns = Arrays.asList("id");
+        List<String> whereClause = Arrays.asList("programid", "duration", "scheduledate");
+        List<String> whereArgs = Arrays.asList(String.valueOf(programId), String.valueOf(duration), Utils.getDateString(scheduleDate, "yyyy-MM-dd HH:mm:ss"));
         //DBAgent dbAgent = new DBAgent(parent);
-        String[][] results = DBAgent.getData(true, tableName, columns, whereClause, whereArgs, null, null, null, null);
-        return results.length > 0 ? Long.parseLong(results[0][0]) : 0l;
+        List<List<Object>> results = DBAgent.getData(tableName, columns, whereClause, whereArgs, null, null, null, null);
+        return results.size() > 0 ? (Long)results.get(0).get(0) : 0l;
     }
 
-    public static void toastOnScreen(final String message, final Context context) {
-        Runnable toaster = new Runnable() {
-            @Override
-            public void run() {
-                Toast toast = Toast.makeText(context, message, Toast.LENGTH_LONG);
-                toast.show();
-            }
-        };
-        Utils.handle(toaster);
-    }
-
-    public static void warnOnScreen(Activity triggerActivity, String message, DialogInterface.OnDismissListener listener) {
-        new AlertDialog.Builder(triggerActivity).setIcon(R.drawable.attention).setOnDismissListener(listener).setTitle("Warning").setMessage(message).setNeutralButton("Close", null).show();
-    }
-
-    public static void warnOnScreen(Activity triggerActivity, String message) {
-        new AlertDialog.Builder(triggerActivity).setIcon(R.drawable.attention).setTitle("Warning").setMessage(message).setNeutralButton("Close", null).show();
-    }
-
-
-    public static void doNotification(ContextWrapper contextWrapper, String title, String content, int icon) {
-        Utils.doNotification(contextWrapper, title, content, icon, true, null);
-    }
-
-    public static void doNotification(ContextWrapper contextWrapper, String title, String content) {
-        Utils.doNotification(contextWrapper, title, content, R.drawable.ic_launcher);
-    }
-
-
-    public static void doNotification(ContextWrapper contextWrapper, String title, String content, int icon, boolean autoCancel, PendingIntent contentIntent) {
-        Utils.doNotification(contextWrapper, title, content, icon, autoCancel, contentIntent, null);
-    }
-
-    @SuppressLint("NewApi")
-    public static void doNotification(ContextWrapper contextWrapper, String title, String content, int icon, boolean autoCancel, PendingIntent contentIntent, NotificationAction[] notificationActions) {
-
-        Notification notification = getNotification(contextWrapper, title, content, icon, autoCancel, contentIntent, notificationActions);
-        NotificationManager notificationManager = (NotificationManager) contextWrapper.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(1, notification);
-    }
-
-    public static Notification getNotification(ContextWrapper contextWrapper, String title, String content, int icon, boolean autoCancel, PendingIntent contentIntent, NotificationAction[] notificationActions) {
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(contextWrapper);
-        notificationBuilder = notificationBuilder.setContentTitle(title);
-        notificationBuilder = notificationBuilder.setContentText(content);
-        notificationBuilder = notificationBuilder.setContentIntent(contentIntent);
-        notificationBuilder.setSmallIcon(icon);
-        notificationBuilder = notificationBuilder.setAutoCancel(autoCancel);
-
-        for (int i = 0; notificationActions != null && i < notificationActions.length && i < 2; i++) {
-            notificationBuilder = notificationBuilder.addAction(notificationActions[i].getIconId(), notificationActions[i].getTitle(), notificationActions[i].getPendingIntent());
-        }
-        return notificationBuilder.build();
-    }
-
-    public static void handle(Runnable runnable) {
-        Utils.handler.post(runnable);
+    public static void toastOnScreen(Message m) {
+        //Throw a message to the logger via rabbit MQ or similar
     }
 
 
@@ -176,7 +101,7 @@ public class Utils {
         }
     }
 
-    public static JSONObject getJSONFromFile(Context context, String fileName) {
+    public static JSONObject getJSONFromFile(String fileName) throws IOException {
         FileInputStream input = null;
         try {
             File jsonFile = new File(fileName);
@@ -185,8 +110,8 @@ public class Utils {
             input.read(buffer);
             return new JSONObject(new String(buffer));
         } catch (Exception ex) {
-            Log.e(context.getString(R.string.app_name), ex.getMessage() == null ? "NullPointerException(CallAuthenticator.isWhiteListed)" : ex.getMessage());
-            return null;
+            Logger.getLogger("org.rootio").log(Level.SEVERE, (ex.getMessage() == null) ? "NullPointerException(CallAuthenticator.isWhiteListed)" : ex.getMessage());
+            throw ex;
         } finally {
             try {
                 input.close();
@@ -196,25 +121,10 @@ public class Utils {
         }
 
     }
+    }
 
-    public static void savePreferences(ContentValues values, Context context) {
-        SharedPreferences prefs = context.getSharedPreferences("org.rootio.handset", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        for (String key : values.keySet()) {
-            Class cls = values.get(key).getClass();
-            if (cls == String.class) {
-                editor.putString(key, values.getAsString(key));
-            } else if (cls == Integer.class) {
-                editor.putInt(key, values.getAsInteger(key));
-            } else if (cls == Boolean.class) {
-                editor.putBoolean(key, values.getAsBoolean(key));
-            } else if (cls == Long.class) {
-                editor.putLong(key, values.getAsLong(key));
-            } else if (cls == Float.class) {
-                editor.putFloat(key, values.getAsFloat(key));
-            }
-        }
-        editor.commit();
+    public static void savePreferences(HashMap<String, String> values) {
+        values.forEach((k,v) -> Configuration.setProperty(k, v));
     }
 
     public static Object getPreference(String key, Class cls, Context context)
@@ -343,20 +253,7 @@ public class Utils {
          return 0;
      }
 
-    public static void writeToFile(Context ctx, String data){
-        File fl = new File(ctx.getExternalFilesDir(null), Utils.getCurrentDateAsString("YYYYMMDD_HmS")+ "_log.txt");
-         FileWriter fwr = null;
-         try {
-             fwr = new FileWriter(fl);
-
-         fwr.write(data);
-         fwr.close();
-         } catch (IOException e) {
-             e.printStackTrace();
-         }
-     }
-
-     public enum EventCategory
+    public enum EventCategory
     {
         MEDIA, SERVICES, SYNC, SMS, CALL, SIP_CALL, DATA_NETWORK
     }

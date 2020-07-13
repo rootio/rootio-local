@@ -32,7 +32,7 @@ public class Logger extends BroadcastReceiver {
         this.log(new LogRecord(m.getCategory(), m.getArgument(), m.getEvent()));
     }
 
-    public class LogRecord
+    public static class LogRecord
     {
         private final String category, argument, event;
 

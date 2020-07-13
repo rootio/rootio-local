@@ -29,4 +29,8 @@ public class Configuration {
     {
         return properties.getProperty(property);
     }
+
+    public static void setProperty(String k, String v) {
+        properties.setProperty(k, v);
+    }
 }
