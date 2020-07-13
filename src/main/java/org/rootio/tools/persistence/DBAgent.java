@@ -1,86 +1,149 @@
 package org.rootio.tools.persistence;
 
-import android.content.ContentValues;
-import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteDatabase.CursorFactory;
-import android.database.sqlite.SQLiteDatabaseLockedException;
-import android.util.Log;
-import org.rootio.RootioApp;
-import org.rootio.handset.R;
-import org.rootio.tools.utils.Utils;
+
+import org.rootio.configuration.Configuration;
+
+import java.sql.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DBAgent {
 
-    private static String databaseName = Configuration.getFilesDir() + "/rootio.sqlite";
-    //private static final Context context;
+    private static String databaseName = Configuration.getProperty("database_file");
+    private static String databaseUrl;
+    private static Semaphore semaphore = new Semaphore(1);
 
-//    public DBAgent(Context context) {
-//        context = context;
-   //   databaseName = context.getFilesDir() + "/rootio.sqlite";
     static {
-    if (!databaseFileExists()) {
-        createDatabaseFile();
+        if (!databaseFileExists()) {
+            createDatabaseFile();
+        }
     }
-}
-   // }
 
     /**
      * Gets a database connection to the specified database
      *
      * @return Database connection to the specified database
      */
-    private static synchronized  SQLiteDatabase getDBConnection(String databaseName, CursorFactory factory, int flag) {
+    private static synchronized Connection getDBConnection(String databaseUrl) throws SQLException {
         try {
-            return SQLiteDatabase.openDatabase(databaseName, null, flag);
-        } catch (Exception ex) {
-            // db file is corrupt, reinstall db
-            // createDatabaseFile();
-            // return SQLiteDatabase.openDatabase(databaseName, null, flag);
+            semaphore.acquire();
+            return DriverManager.getConnection(databaseUrl);
+        } catch (SQLException ex) {
+            throw (ex);
+        } catch (InterruptedException e) {
+            return null;
+        } finally {
+            semaphore.release();
         }
-        return null;
     }
 
     /**
-     * Fetches data from the database according to the criteria specified
-     *
-     * @param distinct      Boolean indicating whether to return distinct values
-     * @param tableName     The name of the table to be queried
-     * @param columns       An arrays of the names of columns to be returned
-     * @param filter        A string with the where clause of the SQL query
-     * @param selectionArgs String array of the values for the parameters in the where
-     *                      clause
-     * @param groupBy       The Group by clause of the SQL query
-     * @param having        The having clause of the SQL query
-     * @param orderBy       The Order by clause of the SQL query
-     * @param limit         The offset and number of rows to return
-     * @return Array of String arrays each representing a record in the database
+     * Retrieves data from a table in the DB according to specified criteria
+     * @param tableName the name of the table from which records are being retrieved
+     * @param columns a List of the columns to be returned in the result set
+     * @param filterColumns the columns whose values are to be used to filter the result set
+     * @param selectionArgs arguments for the filter columns in the SQL query
+     * @param groupBy the group by clause of the query in the format "field1, field2"
+     * @param having the having clause of the query in the format "field1, field2"
+     * @param orderBy the order by clause of the query in the format "field1, field2"
+     * @param limit the limit clause of the SQl query in the format "skip, count"
+     * @return List of Object Lists, each nested list representing a row
+     * @throws SQLException
      */
-    public static String[][] getData(boolean distinct, String tableName, String[] columns, String filter, String[] selectionArgs, String groupBy, String having, String orderBy, String limit) {
-        SQLiteDatabase database = getDBConnection(databaseName, null, SQLiteDatabase.OPEN_READONLY);
-        try {
-            Cursor cursor = database.query(distinct, tableName, columns, filter, selectionArgs, groupBy, having, orderBy, limit);
-            String[][] data = new String[cursor.getCount()][cursor.getColumnCount()];
-            for (int i = 0; i < cursor.getCount(); i++) {
-                cursor.moveToNext();
-                for (int j = 0; j < cursor.getColumnCount(); j++) {
-                    data[i][j] = cursor.getString(j);
-                }
+    public static List<List<Object>> getData(String tableName, List<String> columns, List<String> filterColumns, List<String> selectionArgs, List<String> groupBy, String having, List<String> orderBy, String limit) throws SQLException {
+        return getData(generateSelectQuery(tableName, columns, filterColumns, groupBy, having, orderBy, limit), selectionArgs);
+    }
 
-            }
-            return data;
-        } catch (Exception ex) {
-            System.err.println(ex);
-            return null;
-        } finally {
-            database.close();
+    /**
+     * Generates an SQL query to be used to select records from a table in the DB
+     * @param columns List of columns to be returned in the resultset
+     * @param filterColumns Columns that will be used to filter the results
+     * @param groupBy the group by clause of the query in the format "field1, field2"
+     * @param having the having clause of the query in the format "field1, field2"
+     * @param orderBy the order by clause of the query in the format "field1, field2"
+     * @param limit the limit clause of the SQl query in the format "skip, count"
+     * @return SQl query to be used to fetch records from the DB
+     */
+    private static String generateSelectQuery(String tableName, List<String> columns, List<String> filterColumns, List<String> groupBy, String having, List<String> orderBy, String limit) {
+        StringBuffer query = new StringBuffer();
+        query.append("Select ");
+        query.append(String.join(",", columns));
+        query.append(" from "+tableName);
+        if (filterColumns.size() > 0) {
+            query.append(" where ");
+            query.append(String.join(" = ? and ", filterColumns));
+            query.append(" = ? ");
         }
+        if (orderBy != null) {
+            query.append(" order by");
+            query.append(String.join(", ", orderBy));
+        }
+        if (groupBy != null) {
+            query.append(" group by ");
+            query.append(String.join(", ", groupBy));
+        }
+        if (having != null) {
+            query.append(" having ");
+            query.append(having);
+        }
+        if (limit != null) {
+            query.append(" limit ");
+            query.append(limit);
+        }
+        return query.toString();
+    }
+
+    /**
+     * Generates an SQL query to be used to insert records into a table in the DB
+     * @param tableName the name of the table into which records are being inserted
+     * @param values a hashmap whose keys represent the columns and values represent the values for respective columns
+     * @return SQL query to be used to insert records into the table
+     */
+    private static String generateInsertQuery(String tableName, HashMap<String, Object> values) {
+        StringBuffer query = new StringBuffer();
+        query.append(" Insert into " + tableName);
+        query.append(" (" + String.join(",", values.keySet()) + ") ");
+        query.append(" values (" + String.join(",", values.values().stream().map(v -> "?").collect(Collectors.toList())) + ")");
+        return query.toString();
+    }
+
+    /**
+     * generates an SQL query that is used to delete records from a table
+     * @param tableName the table from which to delete records
+     * @param whereClause the where clause of the delete query in the form "field1 = ? and field2 = ?"
+     * @return Sql query to be used to delete from the table
+     */
+    private static String generateDeleteQuery(String tableName, String whereClause) {
+        StringBuffer query = new StringBuffer();
+        query.append(" delete from " + tableName);
+        query.append(" where " + whereClause);
+        return query.toString();
+    }
+
+    /**
+     * generates an SQL query used to update records in a specified table
+     * @param tableName the name of the table in which to update records
+     * @param updateClause the update clause in the form "field1 = ? and field2 = ?"
+     * @param whereClause the where clause to identify the records marked for update in the form "field1= ? and field2 = ?"
+     * @return Sql query that is used to update records in the table
+     */
+    private static String generateUpdateQuery(String tableName, String updateClause, String whereClause) {
+        StringBuffer query = new StringBuffer();
+        query.append(" update " + tableName + " set " + updateClause + " where " + whereClause);
+        return query.toString();
     }
 
     /**
@@ -88,7 +151,7 @@ public class DBAgent {
      *
      * @return Boolean indicating whether or not the database file exists
      */
-    private static synchronized  boolean databaseFileExists() {
+    private static synchronized boolean databaseFileExists() {
         File databaseFile = new File(databaseName);
         return databaseFile.exists();
     }
@@ -101,7 +164,7 @@ public class DBAgent {
         FileOutputStream foutstr = null;
         File destinationFile = null;
         try {
-            instr = context.getAssets().open("rootio.sqlite");
+            instr = DBAgent.class.getClassLoader().getResourceAsStream("rootio.sqlite");
 
             byte[] buffer = new byte[1024000]; // 1 MB
             instr.read(buffer);
@@ -112,230 +175,147 @@ public class DBAgent {
             if (destinationFile.createNewFile()) {
                 foutstr = new FileOutputStream(destinationFile);
                 foutstr.write(buffer);
+                databaseUrl = "jdbc:sqlite:"+Configuration.getProperty("database_file");
             } else {
-                Utils.toastOnScreen("Failed to create database file! Maybe you are out of space", context);
+                throw new IOException("Failed to create database file! Maybe you are out of space");
             }
         } catch (IOException ex) {
-            Log.e(context.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(DBAgent.createDatabaseFile)" : ex.getMessage());
+            Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.createDatabaseFile)" : ex.getMessage());
 
         } finally {
             try {
                 instr.close();
             } catch (Exception ex) {
-                Log.e(context.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(DBAgent.createDatabaseFile)" : ex.getMessage());
+                Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.createDatabaseFile)" : ex.getMessage());
             }
 
             try {
                 foutstr.close();
             } catch (Exception ex) {
-                Log.e(context.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(DBAgent.createDatabaseFile)" : ex.getMessage());
+                Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.createDatabaseFile)" : ex.getMessage());
             }
         }
 
     }
 
     /**
-     * Fetches data from the database as per the specified query and filters
-     *
-     * @param rawQuery The SQL query to be executed against the database
-     * @param args     Arguments for where clause parameters that may be specified
-     * @return Array of String arrays each representing a record in the database
+     * Retrieves records from  the DB according to specified criteria
+     * @param rawQuery the SQL query specifying the records to fetch
+     * @param selectionArgs arguments to be passed to the SQL query parameters
+     * @return List of Lists of objects, each nested list representing a row
+     * @throws SQLException
      */
-    public static String[][] getData(String rawQuery, String[] args) {
-        SQLiteDatabase database = getDBConnection(databaseName, null, SQLiteDatabase.OPEN_READONLY);
+    public static List<List<Object>> getData(String rawQuery, List<String> selectionArgs) throws SQLException {
+        try (Connection con = getDBConnection(databaseUrl)) {
+            PreparedStatement query = con.prepareStatement(rawQuery);
+            for (int i = 0; i < selectionArgs.size(); i++) {
+                query.setObject(i + 1, selectionArgs.get(i));
+            }
 
-        try {
-            Cursor cursor = database.rawQuery(rawQuery, args);
-            String[][] data = new String[cursor.getCount()][cursor.getColumnCount()];
-            for (int i = 0; i < cursor.getCount(); i++) {
-                cursor.moveToNext();
-                for (int j = 0; j < cursor.getColumnCount(); j++) {
-                    data[i][j] = cursor.getString(j);
+            ResultSet res = query.executeQuery();
+            List<List<Object>> data = new ArrayList();
+            while (res.next()) {
+                List<Object> row = new ArrayList();
+                int i = 0;
+                while (true) {
+                    try {
+                        row.add(res.getObject(i));
+                        i++;
+                    } catch (SQLException ex) {
+                        break;
+                    }
                 }
+                data.add(row);
             }
             return data;
-        } catch (Exception ex) {
-            Log.e(context.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception" : ex.getMessage());
-            return null;
+        } catch (SQLException ex) {
+            throw ex;
         } finally {
-            database.close();
+            semaphore.release();
         }
     }
 
     /**
-     * Saves a row to the Database
-     *
-     * @param tableName      The name of the table to which to save the data
-     * @param nullColumnHack The column in which to insert a null in case of an empty row
-     * @param data           Map of column names and column values to be inserted into the
-     *                       specified table
-     * @return The row id of the inserted row
+     * Saves records to a table in the DB
+     * @param tableName the name of the table to which a record is being persisted
+     * @param data a hashmap whose keys are column names and values are column values
+     * @return number of rows affected by the Sql transaction
+     * @throws SQLException
      */
-    public static synchronized long saveData(String tableName, String nullColumnHack, ContentValues data) {
-        int tries;
-        for (tries = 0; tries < 10; ) {
-            SQLiteDatabase database = getDBConnection(databaseName, null, SQLiteDatabase.OPEN_READWRITE);
-            try {
-
-                return database.insert(tableName, nullColumnHack, data);
-            } catch (SQLiteDatabaseLockedException ex) {
-                tries++;
-                /*try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }*/
-            } catch (Exception ex) {
-                Log.e(context.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(DBAgent.saveData)" : ex.getMessage());
-                return 0;
-            } finally {
-                database.close();
+    public static synchronized long saveData(String tableName, HashMap<String, Object> data) throws SQLException {
+        try (Connection con = getDBConnection(databaseUrl)) {
+            PreparedStatement query = con.prepareStatement(generateInsertQuery(tableName, data));
+            final AtomicInteger i = new AtomicInteger(0);
+            for (Map.Entry<String, Object> entry : data.entrySet()) {
+                String k = entry.getKey();
+                Object v = entry.getValue();
+                query.setObject(i.incrementAndGet(), v);
             }
+            return query.executeUpdate();
+        } catch (SQLException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.saveData)" : ex.getMessage());
+            throw ex;
+        } finally {
+            semaphore.release();
         }
-        return 0;
     }
 
     /**
-     * Saves a row to the Database
-     *
-     * @param tableName      The name of the table to which to save the data
-     * @param nullColumnHack The column in which to insert a null in case of an empty row
-     * @param data           Map of column names and column values to be inserted into the
-     *                       specified table
-     * @return The row id of the inserted row
+     * deletes a record from a table in the DB
+     * @param tableName the name of the table from which a record is to be deleted
+     * @param whereClause where clause specifying the rows to be considered for deletion, in form "field1=? and field2=?"
+     * @param whereArgs List of arguments to fed into the SQL query matching its parameters
+     * @return number of records affected by the delete operation
+     * @throws SQLException
      */
-    public synchronized static boolean bulkSaveData(String tableName, String nullColumnHack, ContentValues[] data) {
-        int tries;
-        for (tries = 0; tries < 10; ) {
-            SQLiteDatabase database = getDBConnection(databaseName, null, SQLiteDatabase.OPEN_READWRITE);
-            database.beginTransaction();
-            try {
-                for (ContentValues datum : data) {
-                    database.insert(tableName, nullColumnHack, datum);
-                }
-                database.setTransactionSuccessful();
-                return true;
-            } catch (SQLiteDatabaseLockedException ex) {
-                tries++;
-                /*try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }*/
-            } catch (Exception ex) {
-                Log.e(context.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(DBAgent.saveData)" : ex.getMessage());
-                return false;
-            } finally {
-                database.endTransaction();
+    public static synchronized long deleteRecords(String tableName, String whereClause, List<String> whereArgs) throws SQLException {
+        try (Connection con = getDBConnection(databaseUrl)) {
+            PreparedStatement query = con.prepareStatement(generateDeleteQuery(tableName, whereClause));
+            final AtomicInteger i = new AtomicInteger(0);
+            for (String arg : whereArgs) {
+                query.setObject(i.incrementAndGet(), arg);
             }
+            return query.executeUpdate();
+        } catch (SQLException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.saveData)" : ex.getMessage());
+            throw ex;
+        } finally {
+            semaphore.release();
         }
-        return false;
     }
+
 
     /**
-     * Saves multiple rows to the Database
-     *
-     * @param tableName      The name of the table to which to save the data
-     * @param nullColumnHack The column in which to insert a null in case of an empty row
-     * @param columns        Array containing names of columns into which data is to be inserted
-     * @param data           Multi dimension array of records being inserted
-     * @return Whether or not the transaction was successful
+     * Updates records in the specified table in the DB
+     * @param tableName the name of the table in which records are to be updated
+     * @param updateClause clause specifying columns whose data is to be updated in form "field1=? and field2=?"
+     * @param updateArgs List of string arguments to be fed into parameters in the SQL query
+     * @param whereClause where clause of the SQL query in the form "field1=? and field2=?"
+     * @param whereArgs args to be fed into the parameters of the SQl query for the where clause
+     * @return number of records affected by the update operation
+     * @throws SQLException
      */
-    public static synchronized boolean bulkSaveData(String tableName, String nullColumnHack, String[] columns, String[][] data) {
-        int tries;
-        for (tries = 0; tries < 10; ) {
-            SQLiteDatabase database = getDBConnection(databaseName, null, SQLiteDatabase.OPEN_READWRITE);
-            database.beginTransaction();
-            try {
-                ContentValues dt = new ContentValues();
-
-                for (int i = 0; i < data.length; i++) {
-                    for (int j = 0; j < columns.length; j++) {
-                        dt.put(columns[j], data[i][j]);
-                    }
-                    database.insert(tableName, nullColumnHack, dt);
-
-                }
-                database.setTransactionSuccessful();
-                return true;
-            } catch (SQLiteDatabaseLockedException ex) {
-                tries++;
-                /*try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }*/
-            } catch (Exception ex) {
-                Log.e(context.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(DBAgent.bulkSaveData)" : ex.getMessage());
-                return false;
-            } finally {
-                database.endTransaction();
+    public static synchronized long updateRecords(String tableName, String updateClause, List<String> updateArgs, String whereClause, List<String> whereArgs) throws SQLException {
+        try (Connection con = getDBConnection(databaseUrl)) {
+            PreparedStatement query = con.prepareStatement(generateUpdateQuery(tableName, updateClause, whereClause));
+            final AtomicInteger i = new AtomicInteger(0);
+            for (String arg : Stream.concat(updateArgs.stream(), whereArgs.stream()).collect(Collectors.toList())) {
+                query.setObject(i.incrementAndGet(), arg);
             }
+            return query.executeUpdate();
+        } catch (SQLException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.saveData)" : ex.getMessage());
+            throw ex;
+        } finally {
+            semaphore.release();
         }
-        return false;
     }
 
-    /**
-     * Deletes records from the database according to the specified criteria
-     *
-     * @param tableName   The name of the table from which to delete records
-     * @param whereClause The where clause specifying the records to be deleted
-     * @param args        Arguments to the parameters specified in the where clause
-     * @return The number of records affected by this delete action
-     */
-    public static synchronized  int deleteRecords(String tableName, String whereClause, String[] args) {
-        int tries;
-        for (tries = 0; tries < 10; ) {
-            SQLiteDatabase database = getDBConnection(databaseName, null, SQLiteDatabase.OPEN_READWRITE);
-            try {
-            return database.delete(tableName, whereClause, args);
-            } catch (SQLiteDatabaseLockedException ex) {
-                tries++;
-               /* try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }*/
-            } catch (Exception ex) {
-                Log.e(context.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(DBAgent.deleteRecords)" : ex.getMessage());
-                return 0;
-            } finally {
-                database.close();
-            }
-        }
-        return 0;
-    }
-
-    /**
-     * Updates records in the database according to the specified criteria
-     *
-     * @param tableName   The name of the table whose records to update
-     * @param data        The values to replace the existing values
-     * @param whereClause The where clause specifying the columns to be updated
-     * @param whereArgs   Arguments to the where clause
-     * @return The number of rows affected by the update transaction
-     */
-    public static synchronized  int updateRecords(String tableName, ContentValues data, String whereClause, String[] whereArgs) {
-        int tries;
-        for (tries = 0; tries < 10; ) {
-            SQLiteDatabase database = getDBConnection(databaseName, null, SQLiteDatabase.OPEN_READWRITE);
-            try {
-                return database.update(tableName, data, whereClause, whereArgs);
-            } catch (SQLiteDatabaseLockedException ex) {
-                tries++;
-                /*try {
-                    //Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }*/
-            } catch (Exception ex) {
-                Log.e(context.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(DBAgent.updateRecords)" : ex.getMessage());
-                return 0;
-            } finally {
-                database.close();
-            }
-        }
-        return 0;
-    }
 
 }

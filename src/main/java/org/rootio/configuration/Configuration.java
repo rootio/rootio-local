@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.Properties;
 
 public class Configuration {
-    private Properties properties;
+    private static Properties properties;
 
     Configuration(String fileLocation) throws FileNotFoundException {
         try {
@@ -14,7 +14,7 @@ public class Configuration {
         }
     }
 
-    private void loadProperties(String fileLocation) throws FileNotFoundException {
+    private static void loadProperties(String fileLocation) throws FileNotFoundException {
         File configFile = new File(fileLocation);
         try (InputStream rdr = new FileInputStream(configFile)) {
             properties.load(rdr);
@@ -25,7 +25,7 @@ public class Configuration {
         }
     }
 
-    public String getProperty(String property)
+    public static String getProperty(String property)
     {
         return properties.getProperty(property);
     }
