@@ -1,24 +1,20 @@
 package org.rootio.tools.telephony;
 
-import java.io.File;
-
-import org.rootio.handset.R;
 import org.rootio.tools.utils.Utils;
 
-import android.content.Context;
-import android.media.MediaRecorder;
-import android.util.Log;
+import javax.sound.sampled.*;
+import java.io.File;
+import java.io.IOException;
 
 public class CallRecorder {
-    private Context parent;
-    private MediaRecorder mediaRecorder;
+    private AudioFormat format;
+    TargetDataLine line;
+    private boolean stopped;
 
-    public CallRecorder(Context parent) {
-        this.parent = parent;
-        this.mediaRecorder = new MediaRecorder();
+    public CallRecorder() {
     }
 
-    private String getFileName() {
+    private synchronized String getFileName() {
         String datePart = Utils.getCurrentDateAsString("yyyyMMddHHmmss");
         String filePath = "/mnt/extSdCard/calls";
         File dir = new File(filePath);
@@ -28,28 +24,49 @@ public class CallRecorder {
         return String.format("%s/%s.3gp", filePath, datePart);
     }
 
-    public void startRecording() {
-
-        String fileName = this.getFileName();
-        if (fileName != null) {
-            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            //mediaRecorder.setAudioChannels(1); // do mono
-            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_WB);
-            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB);
-            mediaRecorder.setOutputFile(fileName);
-            try {
-                mediaRecorder.prepare();
-            } catch (Exception ex) {
-                Log.e(this.parent.getString(R.string.app_name), ex.getMessage() ==
-                        null ? "Null pointer exception(CallRecorder.startRecording)" :
-                        ex.getMessage());
-            }
-            mediaRecorder.start();
+    private TargetDataLine getAudioInput() throws LineUnavailableException {
+        format = getAudioFormat();
+        DataLine.Info info = new DataLine.Info(TargetDataLine.class,
+                format); // format is an AudioFormat object
+        if (!AudioSystem.isLineSupported(info)) {
+            throw new IllegalStateException("Selected audio input is not available");
+        }
+        try {
+            line = (TargetDataLine) AudioSystem.getLine(info);
+            return line;
+        } catch (LineUnavailableException e) {
+            throw e;
         }
 
     }
 
+    AudioFormat getAudioFormat() {
+        float sampleRate = 16000;
+        int sampleSizeInBits = 8;
+        int channels = 2;
+        boolean signed = true;
+        boolean bigEndian = true;
+        AudioFormat format = new AudioFormat(sampleRate, sampleSizeInBits,
+                channels, signed, bigEndian);
+        return format;
+    }
+
+
+    public void startRecording() throws IOException, LineUnavailableException {
+
+        File recordingFile = new File(this.getFileName());
+        try {
+            TargetDataLine line = getAudioInput();
+            line.open(format);
+            AudioInputStream instr = new AudioInputStream(line);
+            line.start();
+            AudioSystem.write(instr, AudioFileFormat.Type.WAVE, recordingFile);
+        } catch (LineUnavailableException | IOException ex) {
+            throw ex;
+        }
+    }
+
     public void stopRecording() {
-        mediaRecorder.stop();
+        line.close();
     }
 }
