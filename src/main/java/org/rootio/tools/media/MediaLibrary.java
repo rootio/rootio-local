@@ -1,69 +1,28 @@
 package org.rootio.tools.media;
 
-import java.util.HashMap;
+import org.rootio.tools.persistence.DBAgent;
+
+import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
-import org.rootio.handset.BuildConfig;
-import org.rootio.tools.utils.Utils;
-
-import android.content.ContentResolver;
-import android.content.Context;
-import android.database.Cursor;
-import android.net.Uri;
-import android.provider.MediaStore.Audio;
-
-//TODO: Make this code safer with try-catches
 public class MediaLibrary {
 
-    private Context parent;
-    private HashMap<String, Media> mediaCatalog;
 
-    MediaLibrary(Context parent) {
-        this.parent = parent;
-        this.loadMedia();
+    MediaLibrary() {
     }
 
-    private void loadMedia() {
-        this.mediaCatalog = new HashMap<>();
-        ContentResolver cr = this.parent.getContentResolver();
-        Uri mediaURI = Audio.Media.EXTERNAL_CONTENT_URI;
-        String filter = Audio.Media.IS_MUSIC + "!= 0";
-        String[] columns = new String[]{Audio.Media.TITLE, Audio.Media.DATA, Audio.Media.DURATION, Audio.Media.ARTIST};
-        Cursor cursor = cr.query(mediaURI, columns, filter, null, null);
-        while (cursor.moveToNext()) {
-            this.mediaCatalog.put(cursor.getString(0), new Media(cursor.getString(0), cursor.getString(1), cursor.getLong(2), cursor.getString(3)));
-        }
-        cursor.close();
-    }
 
-    Media getMedia(String title) {
-        return this.mediaCatalog.get(title);
-    }
 
-    HashSet<Media> getMediaForArtist(String artistTitle) {
-        HashSet<Media> songs = getAudioContent(artistTitle, Audio.Media.ARTIST);
-        //if( BuildConfig.DEBUG) Utils.toastOnScreen("Found " + songs.size() +" songs for artist " + artistTitle, this.parent);
-        return songs;
-    }
-
-    HashSet<Media> getMediaForAlbum(String albumTitle) {
-        HashSet<Media> songs = getAudioContent(albumTitle, Audio.Media.ALBUM);
-        //if( BuildConfig.DEBUG) Utils.toastOnScreen("Found " + songs.size() +" songs for artist " + albumTitle, this.parent);
-        return songs;
-    }
-
-    private HashSet<Media> getAudioContent(String value, String column) {
-        HashSet<Media> songs = new HashSet<Media>();
-        ContentResolver cr = this.parent.getContentResolver();
-        Uri mediaURI = Audio.Media.EXTERNAL_CONTENT_URI;
-        String filter = column + " = ?";
-        String[] arguments = new String[]{value};
-        String[] columns = new String[]{Audio.Media.TITLE, Audio.Media.DATA, Audio.Media.DURATION, Audio.Media.ARTIST};
-        Cursor cursor = cr.query(mediaURI, columns, filter, arguments, null);
-        while (cursor.moveToNext()) {
-            songs.add(new Media(cursor.getString(0), cursor.getString(1), cursor.getLong(2), cursor.getString(3)));
-        }
-        cursor.close();
+    public HashSet<Media> getMedia(String value, String column) throws SQLException {
+        HashSet<Media> songs = new HashSet();
+        String query = "Select title, location, duration, artist from media where " + column +" = ?";
+        List<String> arguments = Arrays.asList(value);
+        List<List<Object>> results = DBAgent.getData(query,arguments);
+        results.forEach(record -> {
+            songs.add(new Media((String)record.get(0), (String)record.get(1), (long)record.get(2), (String)record.get(3)));
+        });
         return songs;
     }
 }

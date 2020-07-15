@@ -371,13 +371,13 @@ public class PlayList implements Player.EventListener {
 
                 switch (record[2]) {
                     case "1"://songs
-                        media.add(this.mediaLib.getMedia(record[1]));
+                        media.addAll(this.mediaLib.getMedia(record[1], "title"));
                         break;
                     case "2":// albums
-                        media.addAll(this.mediaLib.getMediaForAlbum(record[1]));
+                        media.addAll(this.mediaLib.getMedia(record[1], "album"));
                         break;
                     case "3":// artists
-                        media.addAll(this.mediaLib.getMediaForArtist(record[1]));
+                        media.addAll(this.mediaLib.getMedia(record[1], "artist"));
                         break;
                 }
             }
