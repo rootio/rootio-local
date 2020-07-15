@@ -63,8 +63,8 @@ public class DBAgent {
      * @return List of Object Lists, each nested list representing a row
      * @throws SQLException
      */
-    public static List<List<Object>> getData(String tableName, List<String> columns, List<String> filterColumns, List<String> selectionArgs, List<String> groupBy, String having, List<String> orderBy, String limit) throws SQLException {
-        return getData(generateSelectQuery(tableName, columns, filterColumns, groupBy, having, orderBy, limit), selectionArgs);
+    public static List<List<Object>> getData(String tableName, List<String> columns, List<String> filterColumns, List<String> selectionArgs, List<String> groupBy, String having, List<String> orderBy, String sortDirection, String limit) throws SQLException {
+        return getData(generateSelectQuery(tableName, columns, filterColumns, groupBy, having, orderBy, sortDirection, limit), selectionArgs);
     }
 
     /**
@@ -77,7 +77,7 @@ public class DBAgent {
      * @param limit the limit clause of the SQl query in the format "skip, count"
      * @return SQl query to be used to fetch records from the DB
      */
-    private static String generateSelectQuery(String tableName, List<String> columns, List<String> filterColumns, List<String> groupBy, String having, List<String> orderBy, String limit) {
+    private static String generateSelectQuery(String tableName, List<String> columns, List<String> filterColumns, List<String> groupBy, String having, List<String> orderBy, String sortDirection, String limit) {
         StringBuffer query = new StringBuffer();
         query.append("Select ");
         query.append(String.join(",", columns));
@@ -90,6 +90,7 @@ public class DBAgent {
         if (orderBy != null) {
             query.append(" order by");
             query.append(String.join(", ", orderBy));
+            query.append(sortDirection);
         }
         if (groupBy != null) {
             query.append(" group by ");
