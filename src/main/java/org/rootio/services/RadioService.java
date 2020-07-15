@@ -33,7 +33,6 @@ import org.linphone.core.ProxyConfig;
 import org.linphone.core.RegistrationState;
 import org.linphone.core.TransportType;
 import org.linphone.core.Transports;
-import org.rootio.RootioApp;
 import org.rootio.handset.BuildConfig;
 import org.rootio.handset.R;
 import org.rootio.services.SIP.SipEventsNotifiable;

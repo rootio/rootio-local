@@ -16,10 +16,8 @@ import android.util.Log;
 import android.view.KeyEvent;
 
 import org.json.JSONObject;
-import org.rootio.RootioApp;
 import org.rootio.handset.BuildConfig;
 import org.rootio.handset.R;
-import org.rootio.tools.media.PlayList;
 import org.rootio.tools.telephony.CallAuthenticator;
 import org.rootio.tools.telephony.CallRecorder;
 import org.rootio.tools.utils.Utils;

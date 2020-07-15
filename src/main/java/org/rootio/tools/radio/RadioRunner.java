@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 
-import org.rootio.RootioApp;
 import org.rootio.activities.services.TelephonyEventNotifiable;
 import org.rootio.handset.R;
 import org.rootio.tools.media.Program;
