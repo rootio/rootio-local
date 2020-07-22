@@ -1,42 +1,28 @@
 package org.rootio.tools.radio;
 
 import org.rootio.tools.media.ScheduleNotifiable;
-import org.rootio.tools.utils.Utils;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.util.Log;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class ScheduleBroadcastHandler extends BroadcastReceiver implements Runnable {
+public class ScheduleBroadcastHandler  implements Runnable {
 
     private final ScheduleNotifiable notifiable;
-    private Integer currentIndex = -1; // prevent initial assignment to 0
+    private Integer scheduleIndex;
 
-    public ScheduleBroadcastHandler(ScheduleNotifiable notifiable) {
+
+    public ScheduleBroadcastHandler(ScheduleNotifiable notifiable, int scheduleIndex) {
         this.notifiable = notifiable;
+        this.scheduleIndex = scheduleIndex;
     }
 
     @Override
     public void run() {
-        if (!this.notifiable.isExpired(currentIndex)) {
-            Log.d("org.rootio.handset, ", "run: not expired!");
-            this.notifiable.runProgram(currentIndex);
+        if (!this.notifiable.isExpired(scheduleIndex)) {
+            Logger.getLogger("RootIO").log(Level.INFO, "Program with index "+ scheduleIndex + " expired");
+            this.notifiable.runProgram(scheduleIndex);
         } else {
-            Log.d("org.rootio.handset, ", "run: expired!");
+            Logger.getLogger("RootIO").log(Level.INFO, "Program with index "+ scheduleIndex + " not expired");
         }
     }
-
-    @Override
-    public synchronized void onReceive(Context c, Intent i) {
-        Integer possibleIndex = i.getIntExtra("index", -1);
-        //Utils.toastOnScreen("Launching program",c);
-        if (possibleIndex <= currentIndex) { //sometimes two programs will be started at the same time
-            return; // intents are thrown twice sometimes
-        }
-        currentIndex = possibleIndex;
-        new Thread(this).start();
-    }
-
-
 }
