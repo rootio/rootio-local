@@ -1,26 +1,26 @@
 package org.rootio.services.synchronization;
 
-import android.content.Context;
-import android.util.Log;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.rootio.activities.DiagnosticStatistics;
-import org.rootio.handset.BuildConfig;
-import org.rootio.handset.R;
-import org.rootio.tools.cloud.Cloud;
+import org.rootio.configuration.Configuration;
 import org.rootio.tools.persistence.DBAgent;
+
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DiagnosticsHandler implements SynchronizationHandler {
 
-    private Context parent;
     private DiagnosticStatistics diagnosticStatistics;
-    private Cloud cloud;
 
-    DiagnosticsHandler(Context parent, Cloud cloud) {
-        this.parent = parent;
-        this.cloud = cloud;
-        this.diagnosticStatistics = new DiagnosticStatistics(this.parent);
+    DiagnosticsHandler() {
+        try {
+            this.diagnosticStatistics = new DiagnosticStatistics();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
     }
 
     public JSONObject getSynchronizationData() {
@@ -43,20 +43,22 @@ public class DiagnosticsHandler implements SynchronizationHandler {
                 }
             }
         } catch (Exception e) {
-            Log.e(this.parent.getString(R.string.app_name), e.getMessage() == null ? "Null pointer[ProgramHandler.processJSONObject]" : e.getMessage());
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[ProgramHandler.processJSONObject]" : e.getMessage());
         }
     }
 
-    private int deleteSyncedRecord(String id) {
+    private long deleteSyncedRecord(String id) throws SQLException {
         String tableName = "diagnostic";
-        String whereClause = "_id = ?";
-        String[] filterArgs = new String[]{id};
-        //DBAgent agent = new DBAgent(this.parent);
-        return DBAgent.deleteRecords(tableName, whereClause, filterArgs);
+        String whereClause = "id = ?";
+        List<String> filterArgs = Arrays.asList(id);
+        try {
+            return DBAgent.deleteRecords(tableName, whereClause, filterArgs);
+        } catch (SQLException e) {
+            throw e;        }
     }
 
     @Override
     public String getSynchronizationURL() {
-        return String.format("%s://%s:%s/%s/%s/analytics?api_key=%s&version=%s_%s", this.cloud.getServerScheme(), this.cloud.getServerAddress(), this.cloud.getHTTPPort(), "api/station", this.cloud.getStationId(), this.cloud.getServerKey(), BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE);
+        return String.format("%s://%s:%s/%s/%s/analytics?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version"));
     }
 }
