@@ -8,7 +8,6 @@ import org.rootio.tools.persistence.DBAgent;
 import org.rootio.tools.utils.Utils;
 
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
@@ -19,7 +18,6 @@ public class CallLogHandler implements SynchronizationHandler {
 
 
     CallLogHandler() {
-
     }
 
     @Override
