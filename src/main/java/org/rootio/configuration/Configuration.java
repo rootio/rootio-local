@@ -7,11 +7,8 @@ public class Configuration {
     private static Properties properties;
 
     Configuration(String fileLocation) throws FileNotFoundException {
-        try {
-            loadProperties(fileLocation);
-        } catch (FileNotFoundException e) {
-            throw(e);
-        }
+        properties = new Properties();
+        loadProperties(fileLocation);
     }
 
     private static void loadProperties(String fileLocation) throws FileNotFoundException {
@@ -39,4 +36,8 @@ public class Configuration {
         properties.setProperty(k, v);
     }
 
+    public static boolean isSet(String property)
+    {
+        return properties.containsKey(property);
+    }
 }
