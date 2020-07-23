@@ -2,10 +2,11 @@ package org.rootio.tools.radio;
 
 import org.rootio.tools.media.ScheduleNotifiable;
 
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ScheduleBroadcastHandler  implements Runnable {
+public class ScheduleBroadcastHandler  extends TimerTask {
 
     private final ScheduleNotifiable notifiable;
     private Integer scheduleIndex;
