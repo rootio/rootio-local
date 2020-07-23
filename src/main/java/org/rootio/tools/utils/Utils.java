@@ -1,20 +1,16 @@
 package org.rootio.tools.utils;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.rootio.configuration.Configuration;
 import org.rootio.tools.persistence.DBAgent;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 public class Utils {
