@@ -30,7 +30,13 @@ public class Configuration {
         return properties.getProperty(property);
     }
 
+    public static String getProperty(String property, String defaultValue)
+    {
+        return properties.getProperty(property, defaultValue);
+    }
+
     public static void setProperty(String k, String v) {
         properties.setProperty(k, v);
     }
+
 }
