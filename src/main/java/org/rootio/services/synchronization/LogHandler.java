@@ -1,26 +1,21 @@
 package org.rootio.services.synchronization;
 
-import android.content.Context;
-import android.provider.MediaStore;
-import android.util.Log;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.rootio.handset.BuildConfig;
-import org.rootio.handset.R;
-import org.rootio.tools.cloud.Cloud;
+import org.rootio.configuration.Configuration;
 import org.rootio.tools.persistence.DBAgent;
-import org.rootio.tools.utils.Utils;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LogHandler implements SynchronizationHandler {
 
-    private Context parent;
-    private Cloud cloud;
-
-    LogHandler(Context parent, Cloud cloud) {
-        this.parent = parent;
-        this.cloud = cloud;
+    LogHandler() {
     }
 
     public JSONObject getSynchronizationData() {
@@ -43,46 +38,52 @@ public class LogHandler implements SynchronizationHandler {
                 }
             }
         } catch (Exception e) {
-            Log.e(this.parent.getString(R.string.app_name), e.getMessage() == null ? "Null pointer[ProgramHandler.processJSONObject]" : e.getMessage());
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[LogHandler.processJSONObject]" : e.getMessage());
         }
     }
 
-    private int deleteSyncedRecord(String id) {
+    private long deleteSyncedRecord(String id) {
         String tableName = "activitylog";
         String whereClause = "id = ?";
-        String[] filterArgs = new String[]{id};
-        //DBAgent agent = new DBAgent(this.parent);
-        return DBAgent.deleteRecords(tableName, whereClause, filterArgs);
+        List<String> filterArgs = Collections.singletonList(id);
+        try {
+            return DBAgent.deleteRecords(tableName, whereClause, filterArgs);
+        } catch (SQLException e) {
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[LogHandler.deleteSyncedRecord]" : e.getMessage());
+        }
+        return -1;
     }
 
     @Override
     public String getSynchronizationURL() {
-        return String.format("%s://%s:%s/%s/%s/log?api_key=%s&version=%s_%s", this.cloud.getServerScheme(), this.cloud.getServerAddress(), this.cloud.getHTTPPort(), "api/station", this.cloud.getStationId(), this.cloud.getServerKey(), BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE);
-   }
+        return String.format("%s://%s:%s/%s/%s/log?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version"));
+    }
 
     private JSONObject getRecords() {
         String query = "select id, category, argument, event, eventdate  from activitylog limit 100";
-        String[] filterArgs = new String[]{};
-        //DBAgent agent = new DBAgent(this.parent);
-        String[][] results = DBAgent.getData(query, filterArgs);
+        List<String> filterArgs = new ArrayList<>();
         JSONObject parent = new JSONObject();
         JSONArray logData = new JSONArray();
         try {
-            for (int index = 0; index < results.length; index++) {
+
+            List<List<Object>> results = DBAgent.getData(query, filterArgs);
+            results.forEach(row -> {
                 JSONObject record = new JSONObject();
-                record.put("id", results[index][0]);
-                record.put("category", results[index][1]);
-                record.put("argument", results[index][2]);
-                record.put("event", results[index][3]);
-                record.put("eventdate", results[index][4]);
-                logData.put(record);
-            }
+                try {
+                    record.put("id", row.get(0));
+                    record.put("category", row.get(1));
+                    record.put("argument", row.get(2));
+                    record.put("event", row.get(3));
+                    record.put("eventdate", row.get(4));
+                    logData.put(record);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            });
             parent.put("log_data", logData);
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        } catch (SQLException | JSONException e) {
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[LogHandler.getRecords]" : e.getMessage());
         }
-        //Utils.writeToFile(this.parent, parent.toString());
         return parent;
     }
 }
