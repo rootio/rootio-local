@@ -1,78 +1,59 @@
-/**
- *
- */
 package org.rootio.services.synchronization;
-
-import java.util.Calendar;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.rootio.handset.BuildConfig;
-import org.rootio.handset.R;
-import org.rootio.tools.cloud.Cloud;
+import org.rootio.configuration.Configuration;
+import org.rootio.tools.persistence.DBAgent;
 import org.rootio.tools.utils.Utils;
 
-import android.content.ContentResolver;
-import android.content.ContentValues;
-import android.content.Context;
-import android.database.Cursor;
-import android.net.Uri;
-import android.util.Log;
+import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Jude Mukundane, M-ITI/IST-UL
  */
 public class SMSLogHandler implements SynchronizationHandler {
 
-    private Context parent;
-    private ContentResolver cr;
-    private Uri uri;
-    private Cloud cloud;
-
-    SMSLogHandler(Context parent, Cloud cloud) {
-        this.parent = parent;
-        this.cloud = cloud;
-        this.prepareContentResolver();
-    }
-
-    private void prepareContentResolver() {
-        cr = this.parent.getContentResolver();
-        uri = Uri.parse("content://sms");
-
+    SMSLogHandler() {
     }
 
     @Override
     public JSONObject getSynchronizationData() {
         JSONObject data = new JSONObject();
         JSONArray sms = new JSONArray();
-        String[] columns = new String[]{"_id", "address", "body", "date", "type"};
-        String filter = "_id > ?";
-        String[] args = new String[]{String.valueOf(this.getMaxId())};
+        String query = "selct id, address, body, date, type from sms where id > ?";
+        List<String> whereArgs = Collections.singletonList(String.valueOf(this.getMaxId()));
+
         try {
-            Cursor cur = cr.query(uri, columns, filter, args, "_id ASC");
-            if (cur != null && cur.getCount() > 0) {
-                while (cur.moveToNext()) {
-                    JSONObject smsRecord = new JSONObject();
-                    smsRecord.put("message_uuid", cur.getLong(0));
-                    if (cur.getInt(4) == 1) {
-                        smsRecord.put("from_phonenumber", cur.getString(1));
+            List<List<Object>> results = DBAgent.getData(query, whereArgs);
+            results.forEach(record -> {
+                JSONObject smsRecord = new JSONObject();
+                try {
+                    smsRecord.put("message_uuid", (long) record.get(0));
+                    if ((int) record.get(4) == 1) {
+                        smsRecord.put("from_phonenumber", record.get(1));
                         smsRecord.put("to_phonenumber", "");
                     } else {
                         smsRecord.put("from_phonenumber", "");
-                        smsRecord.put("to_phonenumber", cur.getString(1));
+                        smsRecord.put("to_phonenumber", record.get(1));
                     }
-                    smsRecord.put("text", cur.getString(2));
+                    smsRecord.put("text", record.get(2));
                     Calendar cal = Calendar.getInstance();
-                    cal.setTimeInMillis(cur.getLong(3));
+                    cal.setTimeInMillis((long) record.get(3));
                     smsRecord.put("sendtime", Utils.getDateString(cal.getTime(), "yyyy-MM-dd HH:mm:ss"));
                     sms.put(smsRecord);
+                } catch (JSONException e) {
+                    Logger.getLogger("org.rootio").log(Level.WARNING, "SMSLogHandler.getSynchronizationData: " + e.getMessage());
                 }
-            }
-            cur.close();
+            });
             data.put("message_data", sms);
-        } catch (JSONException e) {
-            e.printStackTrace();
+        } catch (JSONException | SQLException e) {
+            Logger.getLogger("org.rootio").log(Level.WARNING, "SMSLogHandler.getSynchronizationData: " + e.getMessage());
         }
         return data;
     }
@@ -87,26 +68,30 @@ public class SMSLogHandler implements SynchronizationHandler {
             for (int i = 0; i < results.length(); i++) {
                 if (results.getJSONObject(i).getBoolean("status")) {
                     maxSmsId = Math.max(results.getJSONObject(i).getLong("id"), maxSmsId);
-                 }
+                }
             }
             this.logLastId(maxSmsId);//This is unsafe. if some messages are unsynced, they are skipped for good
         } catch (JSONException e) {
-            e.printStackTrace();
+            Logger.getLogger("org.rootio").log(Level.WARNING, "SMSLogHandler.processJSONResponse: " + e.getMessage());
         }
     }
 
     private void logLastId(long id) {
-        ContentValues values = new ContentValues();
-            values.put("sms_id", id);
-           Utils.savePreferences(values, this.parent);
+        Configuration.setProperty("call_id", String.valueOf(id));
     }
 
     private long getMaxId() {
-        return (long)Utils.getPreference("sms_id", long.class, this.parent);
+        try {
+            return Long.parseLong(Configuration.getProperty("call_id"));
+        } catch (NumberFormatException e) {
+            Logger.getLogger("org.rootio").log(Level.WARNING, "SMSLogHandler.getMaxId: " + e.getMessage());
+            return 0;
+        }
     }
+
 
     @Override
     public String getSynchronizationURL() {
-        return String.format("%s://%s:%s/%s/%s/message?api_key=%s&version=%s_%s", this.cloud.getServerScheme(), this.cloud.getServerAddress(), this.cloud.getHTTPPort(), "api/station", this.cloud.getStationId(), this.cloud.getServerKey(), BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE);
+        return String.format("%s://%s:%s/%s/%s/message?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("Station_key"), Configuration.getProperty("version_name"), Configuration.getProperty("version_code"));
     }
 }
