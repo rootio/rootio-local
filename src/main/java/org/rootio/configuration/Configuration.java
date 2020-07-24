@@ -32,8 +32,10 @@ public class Configuration {
         return properties.getProperty(property, defaultValue);
     }
 
-    public static void setProperty(String k, String v) {
+    public static boolean setProperty(String k, String v) {
+        boolean isChanged = properties.containsKey(k) && properties.get(k) != v;
         properties.setProperty(k, v);
+        return isChanged;
     }
 
     public static boolean isSet(String property)
