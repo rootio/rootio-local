@@ -1,163 +1,112 @@
 package org.rootio.services.synchronization;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.Handler;
-import android.util.Log;
-
 import org.json.JSONObject;
-import org.rootio.handset.R;
-import org.rootio.services.SynchronizationService;
-import org.rootio.tools.cloud.Cloud;
+import org.rootio.configuration.Configuration;
+import org.rootio.tools.utils.EventAction;
+import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
-import java.time.temporal.ChronoField;
-import java.time.temporal.TemporalField;
-import java.util.HashMap;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoField;
+import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SynchronizationDaemon implements Runnable {
-    private final Context parent;
-    private final Cloud cloud;
-    private Handler handler;
     private MusicListHandler musicListHandler;
-    private boolean isSyncing = false;
-    private HashMap<Integer, Long> syncLocks = new HashMap<>();
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getStringExtra("sync").equals("start")) {
-                SynchronizationDaemon.this.requestSync(intent.getIntExtra("category", 0));
-            } else {
-                SynchronizationDaemon.this.cancelSyncLock(intent.getIntExtra("category", 0));
-            }
-        }
-    };
-
-    private void cancelSyncLock(int category) {
-        if (this.syncLocks.containsKey((new Integer(category)))) {
-            this.syncLocks.remove(new Integer(category));
-        }
-    }
-
+    private HashMap<Integer, Long> syncLocks = new HashMap<>(); //replace this with locks
+    private SynchronizationDaemon syncDaemon;
 
     @Override
     public void run() {
-
-        IntentFilter syncRequestsFilter = new IntentFilter("org.rootio.services.synchronization.SYNC_REQUEST");
-        this.parent.registerReceiver(this.receiver, syncRequestsFilter);
-        this.musicListHandler = new MusicListHandler(this.parent, this.cloud);
+        this.musicListHandler = new MusicListHandler();
         this.synchronize();
     }
 
-    private Long getCurrentTime()
-    {
+    private Long getCurrentTime() {
         return LocalDateTime.now().getLong(ChronoField.MILLI_OF_SECOND);
     }
 
     private void synchronize() {
-        if (!isSyncing) {
-            this.handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    Thread thread = new Thread(new Runnable() {
-                        public void run() {
-                            isSyncing = true;
-                            if (!SynchronizationDaemon.this.syncLocks.containsKey(new Integer(1)))
-                                SynchronizationDaemon.this.synchronize(new DiagnosticsHandler(SynchronizationDaemon.this.parent, SynchronizationDaemon.this.cloud),new Integer(1));
+        synchronized (this) {
+            if (!SynchronizationDaemon.this.syncLocks.containsKey(1))
+                SynchronizationDaemon.this.synchronize(new DiagnosticsHandler(), 1);
 
-                            //if the syncLock is greater than 5 mins old, do not consider it.
-                            if (!(SynchronizationDaemon.this.syncLocks.containsKey(new Integer(2)) && SynchronizationDaemon.this.syncLocks.get(new Integer(2)) < (getCurrentTime () + 300000) )) {
-                                SynchronizationDaemon.this.syncLocks.put(new Integer(2), getCurrentTime());
-                                SynchronizationDaemon.this.synchronize(new ProgramsHandler(SynchronizationDaemon.this.parent, SynchronizationDaemon.this.cloud),new Integer(2));
-                            }
-                            if (!SynchronizationDaemon.this.syncLocks.containsKey(new Integer(3)))
-                                SynchronizationDaemon.this.synchronize(new CallLogHandler(SynchronizationDaemon.this.parent, SynchronizationDaemon.this.cloud),new Integer(3));
-                            if (!SynchronizationDaemon.this.syncLocks.containsKey(new Integer(4)))
-                                SynchronizationDaemon.this.synchronize(new SMSLogHandler(SynchronizationDaemon.this.parent, SynchronizationDaemon.this.cloud),new Integer(4));
-                            if (!SynchronizationDaemon.this.syncLocks.containsKey(new Integer(5)))
-                                SynchronizationDaemon.this.synchronize(new WhitelistHandler(SynchronizationDaemon.this.parent, SynchronizationDaemon.this.cloud),new Integer(5));
-                            if (!SynchronizationDaemon.this.syncLocks.containsKey(new Integer(6)))
-                                SynchronizationDaemon.this.synchronize(new FrequencyHandler(SynchronizationDaemon.this.parent, SynchronizationDaemon.this.cloud),new Integer(6));
-                            if (!SynchronizationDaemon.this.syncLocks.containsKey(new Integer(7)))
-                                SynchronizationDaemon.this.synchronize(SynchronizationDaemon.this.musicListHandler,new Integer(7));
-                            if (!SynchronizationDaemon.this.syncLocks.containsKey(new Integer(8)))
-                                SynchronizationDaemon.this.synchronize(new PlaylistHandler(SynchronizationDaemon.this.parent, SynchronizationDaemon.this.cloud),new Integer(8));
-                            if (!SynchronizationDaemon.this.syncLocks.containsKey(new Integer(9)))
-                                SynchronizationDaemon.this.synchronize(new LogHandler(SynchronizationDaemon.this.parent, SynchronizationDaemon.this.cloud),new Integer(9));
-                            if (!SynchronizationDaemon.this.syncLocks.containsKey(new Integer(10)))
-                                SynchronizationDaemon.this.synchronize(new StationHandler(SynchronizationDaemon.this.parent, SynchronizationDaemon.this.cloud),new Integer(10));
-                            isSyncing = false;
-                        }
-                    });
-                    thread.start(); //TODO: fix synchronicity. if the interval is too short, next jobs will start before this finishes!
-                    if (((SynchronizationService) SynchronizationDaemon.this.parent).isRunning()) { //the service might be stopped in between the scheduling and actual run of this job
-                        SynchronizationDaemon.this.handler.postDelayed(this, SynchronizationDaemon.this.getFrequency() * 1000);
-                    }
-                }
-            }); //this is the first run. Maybe do not delay it..
+            //if the syncLock is greater than 5 mins old, do not consider it.
+            if (!(SynchronizationDaemon.this.syncLocks.containsKey(2) && SynchronizationDaemon.this.syncLocks.get(2) < (getCurrentTime() + 300000))) {
+                SynchronizationDaemon.this.syncLocks.put(2, getCurrentTime());
+                SynchronizationDaemon.this.synchronize(new ProgramsHandler(), 2);
+            }
+            if (!SynchronizationDaemon.this.syncLocks.containsKey(3))
+                SynchronizationDaemon.this.synchronize(new CallLogHandler(), 3);
+            if (!SynchronizationDaemon.this.syncLocks.containsKey(4))
+                SynchronizationDaemon.this.synchronize(new SMSLogHandler(), 4);
+            if (!SynchronizationDaemon.this.syncLocks.containsKey(5))
+                SynchronizationDaemon.this.synchronize(new WhitelistHandler(), 5);
+            if (!SynchronizationDaemon.this.syncLocks.containsKey(6))
+                SynchronizationDaemon.this.synchronize(new FrequencyHandler(), 6);
+            if (!SynchronizationDaemon.this.syncLocks.containsKey(7))
+                SynchronizationDaemon.this.synchronize(SynchronizationDaemon.this.musicListHandler, 7);
+            if (!SynchronizationDaemon.this.syncLocks.containsKey(8))
+                SynchronizationDaemon.this.synchronize(new PlaylistHandler(), 8);
+            if (!SynchronizationDaemon.this.syncLocks.containsKey(9))
+                SynchronizationDaemon.this.synchronize(new LogHandler(), 9);
+            if (!SynchronizationDaemon.this.syncLocks.containsKey(10))
+                SynchronizationDaemon.this.synchronize(new StationHandler(), 10);
         }
     }
 
     public void requestSync(final int category) {
-        this.syncLocks.put(new Integer(category), getCurrentTime()); //prevent automated sync while this is running
+        this.syncLocks.put(category, getCurrentTime()); //prevent automated sync while this is running
         final SynchronizationHandler syncHandler;
         switch (category) {
             case 1:
-                syncHandler = new DiagnosticsHandler(this.parent, this.cloud);
+                syncHandler = new DiagnosticsHandler();
                 break;
             case 2:
-                syncHandler = new ProgramsHandler(this.parent, this.cloud);
+                syncHandler = new ProgramsHandler();
                 break;
             case 3:
-                syncHandler = new CallLogHandler(this.parent, this.cloud);
+                syncHandler = new CallLogHandler();
                 break;
             case 4:
-                syncHandler = new SMSLogHandler(this.parent, this.cloud);
+                syncHandler = new SMSLogHandler();
                 break;
             case 5:
-                syncHandler = new WhitelistHandler(this.parent, this.cloud);
+                syncHandler = new WhitelistHandler();
                 break;
             case 6:
-                syncHandler = new FrequencyHandler(this.parent, this.cloud);
+                syncHandler = new FrequencyHandler();
                 break;
             case 7:
-                syncHandler = new StationHandler(this.parent, this.cloud);
+                syncHandler = new StationHandler();
                 break;
             case 8:
-                syncHandler = new MusicListHandler(this.parent, this.cloud);
+                syncHandler = new MusicListHandler();
                 break;
             case 9:
-                syncHandler = new PlaylistHandler(this.parent, this.cloud);
+                syncHandler = new PlaylistHandler();
                 break;
             default:
                 syncHandler = null;
                 break;
         }
-        if (handler != null) {
-            this.handler.post(new Runnable() {
-                @Override
-                public void run() {
 
-                    Thread thread = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            SynchronizationDaemon.this.synchronize(syncHandler, new Integer(category));
-                        }
-                    });
-                    thread.start();
-                }
-            });
-        }
+        Thread thread = new Thread(() -> SynchronizationDaemon.this.synchronize(syncHandler, category));
+        thread.start();
+
     }
 
+    private SynchronizationDaemon()
+    {
+    }
 
-    public SynchronizationDaemon(Context parent) {
-        this.parent = parent;
-        this.cloud = new Cloud(this.parent);
-        this.handler = new Handler();
+    public SynchronizationDaemon getInstance() {
+        if(this.syncDaemon == null)
+        {
+            this.syncDaemon = new SynchronizationDaemon();
+        }
+        return this.syncDaemon;
     }
 
     /**
@@ -168,8 +117,8 @@ public class SynchronizationDaemon implements Runnable {
     private void getSomeSleep(long milliseconds) {
         try {
             Thread.sleep(milliseconds);// frequency is in seconds
-        } catch (InterruptedException ex) {
-            Log.e(this.parent.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(SynchronizationDaemon.getSomeSleep)" : ex.getMessage());
+        } catch (InterruptedException e) {
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[LogHandler.getSomeSleep]" : e.getMessage());
         }
 
     }
@@ -182,10 +131,9 @@ public class SynchronizationDaemon implements Runnable {
      */
     private int getFrequency() {
         try {
-            JSONObject frequencies = new JSONObject((String) Utils.getPreference("frequencies", String.class, this.parent));
-            return frequencies.getJSONObject("synchronization").getInt("interval");
-        } catch (Exception ex) {
-            Log.e(this.parent.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(SynchronizationDaemon.toggleData)" : ex.getMessage());
+            return Integer.parseInt(Configuration.getProperty("synchronization_interval"));
+        } catch (Exception e) {
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[SynchronizationDaemon]" : e.getMessage());
             return 60; // default to 1 minute
         }
     }
@@ -195,13 +143,13 @@ public class SynchronizationDaemon implements Runnable {
             String synchronizationUrl = handler.getSynchronizationURL();
             HashMap<String, Object> response = Utils.doDetailedPostHTTP(synchronizationUrl, handler.getSynchronizationData().toString());
             JSONObject responseJSON;
+            assert response != null;
             responseJSON = new JSONObject((String) response.get("response"));
             handler.processJSONResponse(responseJSON);
-            Utils.logEvent(this.parent, Utils.EventCategory.SYNC, Utils.EventAction.START, String.format("length: %s, response code: %s, duration: %s, url: %s", response.get("length"), response.get("responseCode"), response.get("duration"), response.get("url")));
-        } catch (Exception ex) {
+            Utils.logEvent(EventCategory.SYNC, EventAction.START, String.format("length: %s, response code: %s, duration: %s, url: %s", response.get("length"), response.get("responseCode"), response.get("duration"), response.get("url")));
+        } catch (Exception e) {
             this.syncLocks.remove(id);
-            ex.printStackTrace();
-            Log.e(SynchronizationDaemon.this.parent.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(SynchronizationDaemon.synchronize)" : ex.getMessage());
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[SynchronizationDaemon.synchronize]" : e.getMessage());
         }
     }
 
