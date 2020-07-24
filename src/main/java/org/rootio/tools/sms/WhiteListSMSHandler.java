@@ -2,17 +2,16 @@ package org.rootio.tools.sms;
 
 import org.rootio.tools.persistence.DBAgent;
 
-import android.content.ContentValues;
-import android.content.Context;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 
 public class WhiteListSMSHandler implements MessageProcessor {
 
     private String[] messageParts;
     private final String from;
-    private final Context parent;
 
-    WhiteListSMSHandler(Context parent, String from, String[] messageParts) {
-        this.parent = parent;
+    WhiteListSMSHandler(String from, String[] messageParts) {
         this.from = from;
         this.messageParts = messageParts;
     }
@@ -49,11 +48,10 @@ public class WhiteListSMSHandler implements MessageProcessor {
 
     private boolean addNumberToWhitelist(String phoneNumber) {
         try {
-            //DBAgent dbAgent = new DBAgent(this.parent);
             String tableName = "whitelist";
-            ContentValues data = new ContentValues();
+            HashMap<String, Object> data = new HashMap<>();
             data.put("telephonenumber", phoneNumber);
-            DBAgent.saveData(tableName, "", data);
+            DBAgent.saveData(tableName, data);
             return true;
         } catch (Exception ex) {
             return false;
@@ -62,10 +60,9 @@ public class WhiteListSMSHandler implements MessageProcessor {
 
     private boolean removeNumberFromWhitelist(String phoneNumber) {
         try {
-            //DBAgent dbAgent = new DBAgent(this.parent);
             String tableName = "whitelist";
             String whereClause = "telephonenumber = ?";
-            String[] whereArgs = new String[]{phoneNumber};
+            List<String> whereArgs = Collections.singletonList(phoneNumber);
             DBAgent.deleteRecords(tableName, whereClause, whereArgs);
             return true;
         } catch (Exception ex) {
