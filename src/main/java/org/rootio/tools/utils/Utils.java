@@ -1,11 +1,10 @@
 package org.rootio.tools.utils;
 
+import org.json.JSONObject;
 import org.rootio.configuration.Configuration;
 import org.rootio.tools.persistence.DBAgent;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.SQLException;
@@ -20,7 +19,7 @@ public class Utils {
         String query = "select id from eventtime where program_id = ? and duration = ? and schedule_date = ?";
         List<String> whereArgs = Arrays.asList(String.valueOf(programId), String.valueOf(duration), Utils.getDateString(scheduleDate, "yyyy-MM-dd HH:mm:ss"));
         List<List<Object>> results = DBAgent.getData(query, whereArgs);
-        return results.size() > 0 ? (Long)results.get(0).get(0) : 0L;
+        return results.size() > 0 ? (Long) results.get(0).get(0) : 0L;
     }
 
     public static String getCurrentDateAsString(String format) {
@@ -106,7 +105,7 @@ public class Utils {
 
     public static HashMap<String, Object> doDetailedPostHTTP(String httpUrl, String data) {
         URL url;
-        long then  = Calendar.getInstance().getTimeInMillis();
+        long then = Calendar.getInstance().getTimeInMillis();
         HashMap<String, Object> responseData = new HashMap<>();
         try {
             url = new URL(httpUrl);
@@ -147,24 +146,29 @@ public class Utils {
      */
     public static boolean isConnectedToStation() {
         return Configuration.isSet("station_name");
-     }
+    }
 
-     public static long logEvent(EventCategory category, EventAction action, String argument)
-     {
-          try {
-             HashMap<String, Object> values = new HashMap<>();
-             values.put("category", category.name());
-             values.put("argument", argument);
-             values.put("event", action.name());
-             values.put("eventdate", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
-             return DBAgent.saveData("activitylog", values);
-         }
-         catch (Exception ex)
-         {
-             ex.printStackTrace();
-         }
-         return 0;
-     }
+    public static long logEvent(EventCategory category, EventAction action, String argument) {
+        try {
+            HashMap<String, Object> values = new HashMap<>();
+            values.put("category", category.name());
+            values.put("argument", argument);
+            values.put("event", action.name());
+            values.put("eventdate", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
+            return DBAgent.saveData("activitylog", values);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return 0;
+    }
 
 
+    public static void saveJSONPreferences(JSONObject jsonData, String fileName) {
+        File fl = new File(Configuration.getProperty("config_direcroty" + "/" + fileName));
+        try (FileWriter fwr = new FileWriter(fl)) {
+            fwr.write(jsonData.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
