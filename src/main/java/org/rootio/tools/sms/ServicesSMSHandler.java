@@ -1,27 +1,16 @@
 package org.rootio.tools.sms;
 
-import android.content.Context;
-import android.content.Intent;
-import android.telephony.SmsManager;
-
-import org.rootio.handset.BuildConfig;
-import org.rootio.services.DiagnosticsService;
 import org.rootio.services.Notifiable;
-import org.rootio.services.RadioService;
 import org.rootio.services.ServiceConnectionAgent;
 import org.rootio.services.ServiceInformationPublisher;
-import org.rootio.services.SynchronizationService;
-import org.rootio.tools.utils.Utils;
 
 public class ServicesSMSHandler implements MessageProcessor, Notifiable {
 
-    private final Context parent;
     private final String from;
     private final String[] messageParts;
     private ServiceConnectionAgent serviceConnectionAgent;
 
-    ServicesSMSHandler(Context parent, String from, String[] messageParts) {
-        this.parent = parent;
+    ServicesSMSHandler(String from, String[] messageParts) {
         this.from = from;
         this.messageParts = messageParts;
     }
@@ -44,7 +33,6 @@ public class ServicesSMSHandler implements MessageProcessor, Notifiable {
         // starting a srevice
         if (messageParts[1].equals("start")) {
             try {
-                if(BuildConfig.DEBUG) Utils.toastOnScreen("starting service " + messageParts[2], this.parent);
                 return this.startService(Integer.parseInt(messageParts[2]));
             } catch (Exception ex) {
                 return false;
@@ -54,7 +42,6 @@ public class ServicesSMSHandler implements MessageProcessor, Notifiable {
         //restarting a service
         if (messageParts[1].equals("restart")) {
             try {
-                if(BuildConfig.DEBUG) Utils.toastOnScreen("starting service " + messageParts[2], this.parent);
                 return this.restartService(Integer.parseInt(messageParts[2]));
             } catch (Exception ex) {
                 return false;
@@ -69,8 +56,6 @@ public class ServicesSMSHandler implements MessageProcessor, Notifiable {
                 return false;
             }
         }
-
-
 
         return false;
     }
@@ -93,30 +78,13 @@ public class ServicesSMSHandler implements MessageProcessor, Notifiable {
      * @return Boolean indicating whether or not the operation was successful
      */
     private boolean startService(int serviceId) {
-        if(serviceId==0)//all services
+        if (serviceId == 0)//all services
         {
-            for(int i : new int[]{1,2,3,4,5,6})
-            {
-                Intent intent = this.getServiceIntent(i);
-                if (intent == null) {
-                    return false;
-                }
-                this.parent.startForegroundService(intent);
-            }
             this.respondAsyncStatusRequest("start all ok", from);
-        }
-        else {
-            Intent intent = this.getServiceIntent(serviceId);
-            if (intent == null) {
-                return false;
-            }
-            this.parent.startForegroundService(intent);
+        } else {
             this.respondAsyncStatusRequest("start ok", from);
         }
-
-
-            return true;
-
+        return true;
     }
 
     /**
@@ -126,35 +94,10 @@ public class ServicesSMSHandler implements MessageProcessor, Notifiable {
      * @return Boolean indicating whether or not the operation was successful
      */
     private boolean stopService(int serviceId) {
-        if(serviceId==0) {
-            for(int i : new int[] {/*1, 2, */3, 4, 5 /*, 6*/})
-            {
-                Intent intent = new Intent();
-                intent.setAction("org.rootio.services.STOP_EVENT");
-                intent.putExtra("serviceId", i);
-                this.parent.sendBroadcast(intent);
-                // try to shutdown
-                Intent intent2 = this.getServiceIntent(i);
-                if (intent2 == null) {
-                    return false;
-                }
-                this.parent.stopService(intent2);
-            }
+        if (serviceId == 0) {
             this.respondAsyncStatusRequest("stop all ok", from);
-        }
-        else
-        {
-            Intent intent = new Intent();
-            intent.setAction("org.rootio.services.STOP_EVENT");
-            intent.putExtra("serviceId", serviceId);
-            this.parent.sendBroadcast(intent);
-            // try to shutdown
-            Intent intent2 = this.getServiceIntent(serviceId);
-            if (intent2 == null) {
-                return false;
-            }
-            this.parent.stopService(intent2);
-            this.respondAsyncStatusRequest(from,"stop " + serviceId +" ok");
+        } else {
+            this.respondAsyncStatusRequest(from, "stop " + serviceId + " ok");
         }
         return true;
     }
@@ -177,28 +120,8 @@ public class ServicesSMSHandler implements MessageProcessor, Notifiable {
      * @param serviceId The ID of the service with which to communicate
      * @return The intent to be used in communicating with the desired service
      */
-    private Intent getServiceIntent(int serviceId) {
-        Intent intent = null;
-        switch (serviceId) {
-           /* case 1:
-                intent = new Intent(this.parent, TelephonyService.class);
-                break;
-            case 2:
-                intent = new Intent(this.parent, SMSService.class);
-                break;*/
-            case 3:
-                intent = new Intent(this.parent, DiagnosticsService.class);
-                break;
-            case 4:
-                intent = new Intent(this.parent, RadioService.class);
-                break;
-            case 5:
-                intent = new Intent(this.parent, SynchronizationService.class);
-                break;
-            /*case 6:
-                intent = new Intent(this.parent, LinSipService.class);
-                break;*/
-        }
+    private Object getServiceIntent(int serviceId) {
+        Object intent = null;
         return intent;
     }
 
@@ -207,17 +130,12 @@ public class ServicesSMSHandler implements MessageProcessor, Notifiable {
      * on the home radio screen
      */
     private void bindToService(int serviceId) {
-        serviceConnectionAgent = new ServiceConnectionAgent(this, 4);
-        Intent intent = this.getServiceIntent(serviceId);
-        if (this.parent.bindService(intent, serviceConnectionAgent, Context.BIND_AUTO_CREATE)) {
-            // just wait for the async call
-        }
+
     }
 
     @Override
     public void respondAsyncStatusRequest(String from, String data) {
-        SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(from, null, data, null, null);
+
     }
 
     @Override
