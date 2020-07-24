@@ -1,24 +1,23 @@
 package org.rootio.tools.sms;
 
-import android.content.ContentValues;
-import android.content.Context;
-import android.telephony.SmsManager;
-
+import org.rootio.configuration.Configuration;
+import org.rootio.tools.persistence.DBAgent;
 import org.rootio.tools.utils.Utils;
 
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * THis Class handles IDs and Timestamp that are used to synchronize calls, SMS and music to the cloud
  * resetting these ids results in a sync of records with an id/date_added greater than the supplied value
  */
 class MarkHandler implements MessageProcessor {
-    private final Context parent;
     private final String from;
     private final String[] messageParts;
 
-    public MarkHandler(Context parent, String from, String[] messageParts) {
-        this.parent = parent;
+    public MarkHandler(String from, String[] messageParts) {
         this.from = from;
         this.messageParts = messageParts;
     }
@@ -41,25 +40,23 @@ class MarkHandler implements MessageProcessor {
         }
     }
 
-    long getUsefulMinDate(String dateStr)
-    {
+    long getUsefulMinDate(String dateStr) throws NumberFormatException {
         Date dt = Utils.getDateFromString(dateStr, "yyyy-MM-dd HH:mm:ss");
-        if(dt == null)
-        {
-            return (long)Utils.getPreference("media_max_date_added", long.class, this.parent);
-        }
-        else
-        {
-            return dt.getTime()/1000;
+        if (dt == null) {
+            return Long.parseLong(Configuration.getProperty("media_max_date_added"));
+        } else {
+            return dt.getTime() / 1000;
         }
 
     }
 
     private boolean setId(String param, String value) {
         try {
-            ContentValues values = new ContentValues();
-            values.put(param, Long.parseLong(value));
-            Utils.savePreferences(values, this.parent);
+            HashMap<String, Object> values = new HashMap<>();
+            String tableName = "marks";
+            String updateClause = param + "= ?";
+            List<String> updateArgs = Collections.singletonList(value);
+            DBAgent.updateRecords(tableName, updateClause, updateArgs, null, null);
             this.respondAsyncStatusRequest(this.from, "mark " + messageParts[1] + " " + messageParts[2] + " ok");
         } catch (Exception ex) {
             this.respondAsyncStatusRequest(this.from, "mark " + messageParts[1] + " " + messageParts[2] + " fail");
@@ -70,7 +67,6 @@ class MarkHandler implements MessageProcessor {
 
     @Override
     public void respondAsyncStatusRequest(String from, String data) {
-        SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(from, null, data, null, null);
+        //send SMS back
     }
 }
