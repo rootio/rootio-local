@@ -1,35 +1,17 @@
 package org.rootio.tools.sms;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-
-import org.rootio.handset.R;
-import org.rootio.tools.diagnostics.DiagnosticAgent;
-
-import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.wifi.WifiConfiguration;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
-import android.telephony.SmsManager;
-import android.util.Log;
-
 public class NetworkSMSHandler implements MessageProcessor {
 
     private String[] messageParts;
-    private Context parent;
     private String from;
 
-    NetworkSMSHandler(Context parent, String from, String[] messageParts) {
-        this.parent = parent;
+    NetworkSMSHandler(String from, String[] messageParts) {
         this.from = from;
         this.messageParts = messageParts;
     }
 
     @Override
     public boolean ProcessMessage() {
-
-        // not enough parameters
         if (this.messageParts.length < 3) {
             return false;
         }
@@ -60,22 +42,7 @@ public class NetworkSMSHandler implements MessageProcessor {
     }
 
     private boolean toggleData(String status) {
-        try {
-            final ConnectivityManager conman = (ConnectivityManager) this.parent.getSystemService(Context.CONNECTIVITY_SERVICE);
-            Class conmanClass;
-            conmanClass = Class.forName(conman.getClass().getName());
-            final Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
-            iConnectivityManagerField.setAccessible(true);
-            final Object iConnectivityManager = iConnectivityManagerField.get(conman);
-            final Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
-            final Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
-            setMobileDataEnabledMethod.setAccessible(true);
-            setMobileDataEnabledMethod.invoke(iConnectivityManager, status.equals("on") ? true : false);
-            return true;
-        } catch (Exception ex) {
-            Log.e(this.parent.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(NetworkSMSHandler.getGSMConnection)" : ex.getMessage());
-            return false;
-        }
+       return false;
     }
 
     /**
@@ -86,12 +53,7 @@ public class NetworkSMSHandler implements MessageProcessor {
      * @return Boolean representing whether or not the operation was successful
      */
     private boolean toggleWifi(String state) {
-        try {
-            WifiManager wifiManager = (WifiManager) parent.getSystemService(Context.WIFI_SERVICE);
-            return wifiManager.setWifiEnabled(state.equals("on"));
-        } catch (Exception ex) {
-            return false;
-        }
+        return false;
     }
 
     /**
@@ -102,34 +64,7 @@ public class NetworkSMSHandler implements MessageProcessor {
      * @return Boolean representing whether or not the operation was successful
      */
     private boolean connectToWifi(String SSID, String password) {
-        try {
-            WifiManager wifiManager = (WifiManager) parent.getSystemService(Context.WIFI_SERVICE);
-            wifiManager.setWifiEnabled(true);
-            try {
-                Thread.sleep(5000); // wifi needs to be enabled long before
-                // configuring network
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            WifiConfiguration wc = new WifiConfiguration();
-            wc.SSID = String.format("\"%s\"", SSID); // IMP! This should be in
-            // Quotes!!
-            wc.preSharedKey = String.format("\"%s\"", password);
-            wc.status = WifiConfiguration.Status.ENABLED;
-            wc.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
-            wc.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);
-            wc.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);
-            wc.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
-            wc.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
-            wc.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
-            wc.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
-            // connect to and enable the connection
-            int netId = wifiManager.addNetwork(wc);
-            return wifiManager.enableNetwork(netId, true);
-        } catch (Exception ex) {
-            return false;
-        }
+       return false;
     }
 
     /**
@@ -139,17 +74,7 @@ public class NetworkSMSHandler implements MessageProcessor {
      * @return String containing information about the GSM connection
      */
     private boolean getGsmConnection() {
-        try {
-            DiagnosticAgent diagnosticAgent = new DiagnosticAgent(this.parent);
-            diagnosticAgent.runDiagnostics();
-            String response = String.format("connected to %s with signal strength %s", diagnosticAgent.getTelecomOperatorName(), diagnosticAgent.getMobileSignalStrength());
-            this.respondAsyncStatusRequest(from, response);
-            return true;
-        } catch (Exception ex) {
-            Log.e(this.parent.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer exception(NetworkSMSHandler.toggleData)" : ex.getMessage());
-            return false;
-        }
-
+        return false;
     }
 
     /**
@@ -160,15 +85,7 @@ public class NetworkSMSHandler implements MessageProcessor {
      * successful
      */
     private boolean getWifiConnection() {
-        WifiManager wifiManager = (WifiManager) this.parent.getSystemService(Context.WIFI_SERVICE);
-        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        if (wifiInfo == null) {
-            return false;
-        } else {
-            String response = String.format("Connected to %s with IP address %s", wifiInfo.getSSID(), wifiInfo.getIpAddress());
-            this.respondAsyncStatusRequest(from, response);
-            return true;
-        }
+       return false;
     }
 
     /**
@@ -194,8 +111,7 @@ public class NetworkSMSHandler implements MessageProcessor {
 
     @Override
     public void respondAsyncStatusRequest(String from, String data) {
-        SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(from, null, data, null, null);
+        //send message
 
     }
 
