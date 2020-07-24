@@ -2,23 +2,16 @@ package org.rootio.tools.sms;
 
 import org.rootio.tools.diagnostics.DiagnosticAgent;
 
-import android.content.Context;
-import android.os.Environment;
-import android.os.StatFs;
-import android.telephony.SmsManager;
-
 public class ResourcesSMSHandler implements MessageProcessor {
 
     private String[] messageParts;
     private String from;
     private DiagnosticAgent diagnosticsAgent;
-    private Context parent;
 
-    public ResourcesSMSHandler(Context parent, String from, String[] messageParts) {
-        this.parent = parent;
+    public ResourcesSMSHandler(String from, String[] messageParts) {
         this.from = from;
         this.messageParts = messageParts;
-        this.diagnosticsAgent = new DiagnosticAgent(this.parent);
+        this.diagnosticsAgent = new DiagnosticAgent();
     }
 
     @Override
@@ -49,16 +42,7 @@ public class ResourcesSMSHandler implements MessageProcessor {
      * @return String with storage information of the phone
      */
     private boolean getStorageLevel() {
-        try {
-            StatFs statFs = new StatFs(Environment.getExternalStorageDirectory().getAbsolutePath());
-            double freeBytes = statFs.getAvailableBlocks() * statFs.getBlockSize();
-            double totalBytes = statFs.getBlockCount() * statFs.getBlockSize();
-            String response = String.format("Available Bytes: %d, Free Bytes: %d", freeBytes, totalBytes);
-            this.respondAsyncStatusRequest(response, from);
-            return true;
-        } catch (Exception ex) {
-            return false;
-        }
+        return false;
     }
 
     /**
@@ -97,8 +81,7 @@ public class ResourcesSMSHandler implements MessageProcessor {
 
     @Override
     public void respondAsyncStatusRequest(String from, String data) {
-        SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(from, null, data, null, null);
+        //send response SMS
     }
 
 }
