@@ -1,16 +1,10 @@
 package org.rootio.tools.sms;
 
-import android.content.Context;
-import android.media.AudioManager;
-import android.telephony.SmsManager;
-
 public class SoundSMSHandler implements MessageProcessor {
 
     private String[] messageParts;
-    private Context parent;
 
-    public SoundSMSHandler(Context parent, String from, String[] messageParts) {
-        this.parent = parent;
+    public SoundSMSHandler(String from, String[] messageParts) {
         this.messageParts = messageParts;
     }
 
@@ -49,13 +43,7 @@ public class SoundSMSHandler implements MessageProcessor {
      * @return Boolean indicating whether or not the operation was successful
      */
     private boolean setVolume(int level) {
-        try {
-            AudioManager am = (AudioManager) parent.getSystemService(Context.AUDIO_SERVICE);
-            am.setStreamVolume(AudioManager.STREAM_MUSIC, level, AudioManager.FLAG_SHOW_UI);
-            return true;
-        } catch (Exception ex) {
-            return false;
-        }
+        return false;
     }
 
     /**
@@ -71,7 +59,6 @@ public class SoundSMSHandler implements MessageProcessor {
 
     @Override
     public void respondAsyncStatusRequest(String from, String data) {
-        SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(from, null, data, null, null);
+        //send response SMS
     }
 }
