@@ -1,20 +1,14 @@
 package org.rootio.tools.sms;
 
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.telephony.SmsMessage;
-
 public class SMSSwitch {
 
     private String[] messageParts;
     private String from;
-    private Context parent;
 
-    @SuppressLint("DefaultLocale")
-    public SMSSwitch(Context parent, SmsMessage message) {
-        this.parent = parent;
-        this.from = message.getOriginatingAddress();
-        this.messageParts = this.getMessageParts(message.getMessageBody().toLowerCase());
+    public SMSSwitch(Object message) {
+//        this.parent = parent;
+//        this.from = message.getOriginatingAddress();
+//        this.messageParts = this.getMessageParts(message.getMessageBody().toLowerCase());
     }
 
     /**
@@ -48,21 +42,21 @@ public class SMSSwitch {
         switch(keyword.toLowerCase())
         {
             case "network": //network|<wifi | gsm >|<on | off | status>
-                return new NetworkSMSHandler(this.parent, from, messageParts);
+                return new NetworkSMSHandler(from, messageParts);
             case "station":
-                return new StationSMSHandler(this.parent, from, messageParts);
+                return new StationSMSHandler(from, messageParts);
             case "services": //services|<service_id>|<start | stop | status>
-                return new ServicesSMSHandler(this.parent, from, messageParts);
+                return new ServicesSMSHandler(from, messageParts);
             case "resources":
-                return new ResourcesSMSHandler(this.parent, from, messageParts);
+                return new ResourcesSMSHandler(from, messageParts);
             case"sound":
-                return new SoundSMSHandler(this.parent, from, messageParts);
+                return new SoundSMSHandler(from, messageParts);
             case "whitelist":
-                return new WhiteListSMSHandler(this.parent, from, messageParts);
+                return new WhiteListSMSHandler(from, messageParts);
             case "ussd": //ussd|*123#
-                return new USSDSMSHandler(this.parent, this.from, messageParts);
+                return new USSDSMSHandler(this.from, messageParts);
             case "mark":
-                return new MarkHandler(this.parent, this.from, messageParts);
+                return new MarkHandler(this.from, messageParts);
             default:
             return null;
         }
