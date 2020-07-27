@@ -1,59 +1,48 @@
 package org.rootio.services;
 
-import org.rootio.handset.R;
 import org.rootio.services.synchronization.SynchronizationDaemon;
+import org.rootio.tools.utils.EventAction;
+import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
-import android.app.Service;
-import android.content.Intent;
-import android.os.IBinder;
-import android.util.Log;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class SynchronizationService extends Service implements ServiceInformationPublisher {
+public class SynchronizationService implements RootioService, ServiceInformationPublisher {
 
     private final int serviceId = 5;
     private boolean isRunning;
 
     @Override
-    public IBinder onBind(Intent arg0) {
-        return new BindingAgent(this);
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Utils.logEvent(this, Utils.EventCategory.SERVICES, Utils.EventAction.START, "Synchronization Service");
+    public boolean start() {
+        Utils.logEvent(EventCategory.SERVICES, EventAction.START, "Synchronization Service");
         if (!this.isRunning) {
-            SynchronizationDaemon synchronizationDaemon = new SynchronizationDaemon(this);
+            SynchronizationDaemon synchronizationDaemon = SynchronizationDaemon.getInstance();
             Thread thread = new Thread(synchronizationDaemon);
             this.isRunning = true;
             thread.start();
             this.sendEventBroadcast();
-            Utils.doNotification(this, "RootIO", "Synchronization Service Started");
         }
-        this.startForeground(this.serviceId, Utils.getNotification(this, "RootIO", "Synchronization service is running", R.drawable.icon, false, null, null));
-        new ServiceState(this, 5,"Synchronization", 1).save();
-        return Service.START_STICKY;
+        new ServiceState(5,"Synchronization", 1).save();
+        return true;
     }
 
     @Override
-    public void onDestroy() {
-        Utils.logEvent(this, Utils.EventCategory.SERVICES, Utils.EventAction.STOP, "Synchronization Service");
-        this.stopForeground(true);
+    public void stop() {
+        Utils.logEvent(EventCategory.SERVICES, EventAction.STOP, "Synchronization Service");
         try {
             this.shutDownService();
         }
-        catch(Exception ex)
+        catch(Exception e)
         {
-            Log.e(this.getString(R.string.app_name), String.format("[SynchronizationService.onDestroy] %s", ex.getMessage() == null ? "Null pointer exception" : ex.getMessage()));
+            Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[SynchronizationService.stop]" : e.getMessage());
         }
-        new ServiceState(this, 5,"Synchronization", 0).save();
-        super.onDestroy();
+        new ServiceState(5,"Synchronization", 0).save();
     }
 
     private void shutDownService() {
         if (this.isRunning) {
             this.isRunning = false;
-            Utils.doNotification(this, "RootIO", "Synchronization Service Stopped");
             this.sendEventBroadcast();
         }
     }
@@ -62,11 +51,7 @@ public class SynchronizationService extends Service implements ServiceInformatio
      * Sends out broadcasts informing listeners of changes in service status
      */
     public void sendEventBroadcast() {
-        Intent intent = new Intent();
-        intent.putExtra("serviceId", this.serviceId);
-        intent.putExtra("isRunning", this.isRunning);
-        intent.setAction("org.rootio.services.synchronization.EVENT");
-        this.sendBroadcast(intent);
+        //send event broadcast
     }
 
     @Override
