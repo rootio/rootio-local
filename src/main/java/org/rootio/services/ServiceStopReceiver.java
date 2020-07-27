@@ -1,8 +1,6 @@
 package org.rootio.services;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
+import org.rootio.tools.ipc.BroadcastReceiver;
 
 public class ServiceStopReceiver extends BroadcastReceiver {
 
@@ -13,8 +11,7 @@ public class ServiceStopReceiver extends BroadcastReceiver {
     }
 
     @Override
-    public void onReceive(Context context, Intent intent) {
-        this.connectedActivity.notifyServiceStop(intent.getIntExtra("serviceId", 0));
+    public void onReceive(Object o) {
 
     }
 
