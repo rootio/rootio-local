@@ -56,7 +56,7 @@ public class DiagnosticsService implements RootioService {
 
     private long getDelay() {
         try {
-            JSONObject frequencies = new JSONObject((String)Utils.loadPreferencesFile("frequencies",String.class, this));
+            JSONObject frequencies = new JSONObject(Utils.loadPreferencesFile("frequencies.json"));
             return frequencies.getJSONObject("diagnostics").getInt("interval");
         } catch (Exception ex) {
             return 180; // default to 3 mins
