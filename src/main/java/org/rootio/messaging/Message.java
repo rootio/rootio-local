@@ -16,4 +16,12 @@ public class Message {
     public String getCategory() {
         return category;
     }
+
+    public Object getOriginatingAddress() {
+        return null;
+    }
+
+    public Object getMessageBody() {
+        return null;
+    }
 }
