@@ -1,61 +1,48 @@
 package org.rootio.services;
 
 import org.json.JSONObject;
-import org.rootio.handset.R;
 import org.rootio.tools.diagnostics.DiagnosticAgent;
 import org.rootio.tools.persistence.DBAgent;
+import org.rootio.tools.utils.EventAction;
+import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
-import android.app.Service;
-import android.content.ContentValues;
-import android.content.Context;
-import android.content.Intent;
-import android.os.IBinder;
-import android.util.Log;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import static android.content.ContentValues.TAG;
-
-public class DiagnosticsService extends Service implements ServiceInformationPublisher {
+public class DiagnosticsService implements RootioService {
 
     private boolean isRunning;
     private int serviceId = 3;
     private Thread runnerThread;
 
-    @Override
-    public IBinder onBind(Intent arg0) {
-        return new BindingAgent(this);
-    }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Utils.logEvent(this, Utils.EventCategory.SERVICES, Utils.EventAction.START, "Diagnostics Service");
+    public boolean start() {
+        Utils.logEvent(EventCategory.SERVICES, EventAction.START, "Diagnostics Service");
         if (!this.isRunning) {
-            Utils.doNotification(this, "RootIO", "Diagnostics service started");
             long delay = this.getDelay();
             delay = delay > 0 ? this.getMillisToSleep("seconds", delay) : 10000; // 10000 default
-            DiagnosticsRunner diagnosticsRunner = new DiagnosticsRunner(this, delay);
+            DiagnosticsRunner diagnosticsRunner = new DiagnosticsRunner(delay);
             runnerThread = new Thread(diagnosticsRunner);
             runnerThread.start();
             this.isRunning = true;
         }
-        this.startForeground(this.serviceId, Utils.getNotification(this, "RootIO", "Diagnostics service is running", R.drawable.icon, false, null, null));
-        new ServiceState(this, 3,"Diagnostic", 1).save();
-        return Service.START_STICKY;
+        return isRunning;
     }
 
     @Override
-    public void onDestroy() {
-        Utils.logEvent(this, Utils.EventCategory.SERVICES, Utils.EventAction.STOP, "Diagnostics Service");
-        this.stopForeground(true);
+    public void stop() {
+        Utils.logEvent(EventCategory.SERVICES, EventAction.STOP, "Diagnostics Service");
         try
         {
             this.shutDownService();
-        }catch(Exception ex)
+        }catch(Exception e)
         {
-            Log.e(this.getString(R.string.app_name), String.format("[DiagnosticsService.onDestroy] %s", ex.getMessage() == null ? "Null pointer exception" : ex.getMessage()));
+            Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[DiagnosticsService.stop]" : e.getMessage());
         }
-        new ServiceState(this, 3,"Diagnostic", 0).save();
-        super.onDestroy();
+        new ServiceState(3,"Diagnostic", 0).save();
     }
 
     private void shutDownService() {
@@ -69,7 +56,7 @@ public class DiagnosticsService extends Service implements ServiceInformationPub
 
     private long getDelay() {
         try {
-            JSONObject frequencies = new JSONObject((String)Utils.getPreference("frequencies",String.class, this));
+            JSONObject frequencies = new JSONObject((String)Utils.loadPreferencesFile("frequencies",String.class, this));
             return frequencies.getJSONObject("diagnostics").getInt("interval");
         } catch (Exception ex) {
             return 180; // default to 3 mins
@@ -97,30 +84,12 @@ public class DiagnosticsService extends Service implements ServiceInformationPub
         }
     }
 
-
-
-    @Override
-    public int getServiceId() {
-        return this.serviceId;
-    }
-
-    @Override
-    public void sendEventBroadcast() {
-        Intent intent = new Intent();
-        intent.putExtra("serviceId", this.serviceId);
-        intent.putExtra("isRunning", this.isRunning);
-        intent.setAction("org.rootio.services.diagnostics.EVENT");
-        this.sendBroadcast(intent);
-    }
-
     class DiagnosticsRunner implements Runnable {
         private DiagnosticAgent diagnosticAgent;
-        private Context parentActivity;
         private long delay;
 
-        DiagnosticsRunner(Context parentActivity, long delay) {
-            this.parentActivity = parentActivity;
-            this.diagnosticAgent = new DiagnosticAgent(this.parentActivity);
+        DiagnosticsRunner(long delay) {
+            this.diagnosticAgent = new DiagnosticAgent();
             this.delay = delay;
         }
 
@@ -131,8 +100,8 @@ public class DiagnosticsService extends Service implements ServiceInformationPub
                 this.logToDB();
                 try {
                     Thread.sleep(delay);
-                } catch (InterruptedException ex) {
-                    Log.e(TAG, "run: " +ex.getMessage(), ex);
+                } catch (InterruptedException e) {
+                    Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[DiagnosticsRunner.run]" : e.getMessage());
                 }
             }
         }
@@ -142,7 +111,7 @@ public class DiagnosticsService extends Service implements ServiceInformationPub
          */
         private void logToDB() {
             String tableName = "diagnostic";
-            ContentValues values = new ContentValues();
+            HashMap<String, Object> values = new HashMap<>();
             values.put("batterylevel", diagnosticAgent.getBatteryLevel());
             values.put("memoryutilization", diagnosticAgent.getMemoryStatus());
             values.put("storageutilization", diagnosticAgent.getStorageStatus());
@@ -154,8 +123,11 @@ public class DiagnosticsService extends Service implements ServiceInformationPub
             values.put("firstmobilenetworktype", diagnosticAgent.getMobileNetworkType());
             values.put("latitude", diagnosticAgent.getLatitude());
             values.put("longitude", diagnosticAgent.getLongitude());
-            //DBAgent dbAgent = new DBAgent(this.parentActivity);
-            DBAgent.saveData(tableName, null, values);
+            try {
+                DBAgent.saveData(tableName,  values);
+            } catch (SQLException e) {
+                Logger.getLogger("RootIO").log(Level.SEVERE, e.getMessage() == null ? "Null pointer[DiagnosticsRunner.run]" : e.getMessage());
+            }
         }
     }
 
