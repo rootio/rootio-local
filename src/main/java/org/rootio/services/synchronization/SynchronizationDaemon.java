@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 public class SynchronizationDaemon implements Runnable {
     private MusicListHandler musicListHandler;
     private HashMap<Integer, Long> syncLocks = new HashMap<>(); //replace this with locks
-    private SynchronizationDaemon syncDaemon;
+    private static SynchronizationDaemon syncDaemon;
 
     @Override
     public void run() {
@@ -101,12 +101,12 @@ public class SynchronizationDaemon implements Runnable {
     {
     }
 
-    public SynchronizationDaemon getInstance() {
-        if(this.syncDaemon == null)
+    public static SynchronizationDaemon getInstance() {
+        if(syncDaemon == null)
         {
-            this.syncDaemon = new SynchronizationDaemon();
+            syncDaemon = new SynchronizationDaemon();
         }
-        return this.syncDaemon;
+        return syncDaemon;
     }
 
     /**
