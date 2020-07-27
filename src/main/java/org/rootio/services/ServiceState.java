@@ -1,29 +1,26 @@
 package org.rootio.services;
 
-import java.util.Date;
-
 import org.rootio.tools.persistence.DBAgent;
 import org.rootio.tools.utils.Utils;
 
-import android.content.ContentValues;
-import android.content.Context;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ServiceState {
 
     private final int serviceId;
     private int serviceState;
-    private final Context context;
     private Date lastUpdatedDate;
     private String serviceName;
 
-    public ServiceState(Context context, int serviceId) {
-        this.context = context;
+    public ServiceState(int serviceId) {
         this.serviceId = serviceId;
         this.fetchServiceState();
     }
 
-    public ServiceState(Context context, int serviceId, String serviceName, int serviceState) {
-        this.context = context;
+    public ServiceState(int serviceId, String serviceName, int serviceState) {
         this.serviceId = serviceId;
         this.serviceName= serviceName;
         this.serviceState = serviceState;
@@ -76,51 +73,58 @@ public class ServiceState {
     }
 
     private void updateServiceState() {
-        String tableName = "servicestate";
-        ContentValues data = new ContentValues();
-        data.put("servicestate", serviceState);
-        data.put("lastupdateddate", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
+        String tableName = "service_state";
+        String updateClause = "state = ? and last_update_date = ?";
         String whereClause = "id = ?";
-        String[] whereArgs = new String[]{String.valueOf(serviceId)};
-        //DBAgent agent = new DBAgent(this.context);
-        DBAgent.updateRecords(tableName, data, whereClause, whereArgs);
+        List<String> whereArgs = Collections.singletonList(String.valueOf(serviceId));
+        List<String> updateArgs = Arrays.asList(String.valueOf(serviceState), Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
+        try {
+            DBAgent.updateRecords(tableName, updateClause,updateArgs,whereClause,whereArgs);
+        } catch (SQLException e) {
+            Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[ServiceState.updateServiceState]" : e.getMessage());
+        }
     }
 
     /**
      * Fetches the state of the service as persisted in the database
      */
     private void fetchServiceState() {
-        String tableName = "servicestate";
-        String[] columns = new String[]{"service", "servicestate", "lastupdateddate"};
-        String whereClause = "id = ?";
-        String[] whereArgs = new String[]{String.valueOf(serviceId)};
-        //DBAgent agent = new DBAgent(this.context);
-        String[][] result = DBAgent.getData(true, tableName, columns, whereClause, whereArgs, null, null, null, null);
-        this.serviceState = result.length > 0 ? Utils.parseIntFromString(result[0][1]) : 0;
+        String query = "select service, state, last_update_date from service_state where id = ?";
+        List<String> whereArgs = Collections.singletonList(String.valueOf(serviceId));
+        List<List<Object>> result = null;
+        try {
+            result = DBAgent.getData(query, whereArgs);
+        } catch (SQLException e) {
+            Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[ServiceState.fetchServiceState]" : e.getMessage());
+        }
+        this.serviceState = result !=null && result.size() > 0 ? (int)result.get(0).get(1) : 0;
     }
 
     private void insertServiceState()
     {
         String tableName = "servicestate";
-        ContentValues data = new ContentValues();
+        HashMap<String, Object> data = new HashMap<>();
         data.put("id", serviceId);
         data.put("service", serviceName);
         data.put("servicestate", serviceState);
         data.put("lastupdateddate", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
-        //String whereClause = "id = ?";
-       // String[] whereArgs = new String[]{String.valueOf(serviceId)};
-        //DBAgent agent = new DBAgent(this.context);
-        DBAgent.saveData(tableName, null, data);
+        try {
+            DBAgent.saveData(tableName, data);
+        } catch (SQLException e) {
+            Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[ServiceState.insertServiceState]" : e.getMessage());
+        }
     }
 
     private boolean serviceStateExists()
     {
-        String tableName = "servicestate";
-        String[] columns = new String[]{"service", "servicestate", "lastupdateddate"};
-        String whereClause = "id = ?";
-        String[] whereArgs = new String[]{String.valueOf(serviceId)};
-        //DBAgent agent = new DBAgent(this.context);
-        String[][] result = DBAgent.getData(true, tableName, columns, whereClause, whereArgs, null, null, null, null);
-        return result != null && result.length > 0; // && ? Utils.parseIntFromString(result[0][1]) : 0;
+        String query = "select * from service_state where id = ?";
+        List<String> whereArgs = Collections.singletonList(String.valueOf(serviceId));
+        List<List<Object>> result = null;
+        try {
+            result = DBAgent.getData(query, whereArgs);
+        } catch (SQLException e) {
+            Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[ServiceState.serviceStateExists]" : e.getMessage());
+        }
+        return result != null && result.size() > 0;
     }
 }
