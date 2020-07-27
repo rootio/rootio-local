@@ -1,9 +1,6 @@
 package org.rootio.tools.radio;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-
+import org.rootio.tools.ipc.BroadcastReceiver;
 import org.rootio.tools.media.ScheduleChangeNotifiable;
 
 /**
@@ -20,8 +17,7 @@ public class ScheduleChangeBroadcastHandler extends BroadcastReceiver {
 
 
     @Override
-    public void onReceive(Context c, Intent i) {
-        boolean shouldRestart = i.getBooleanExtra("shouldRestart", false);
-        this.notifiable.notifyScheduleChange(shouldRestart);
+    public void onReceive(Object o) {
+        this.notifiable.notifyScheduleChange((boolean) o);
     }
 }
