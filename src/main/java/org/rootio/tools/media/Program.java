@@ -7,13 +7,11 @@ import org.rootio.tools.radio.ScheduleBroadcastHandler;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Timer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Program implements Comparable<Program>, ScheduleNotifiable {
 
-    private Timer timer;
     private String title;
     private Date startDate, endDate;
     private int playingIndex;
@@ -25,7 +23,6 @@ public class Program implements Comparable<Program>, ScheduleNotifiable {
         this.title = title;
         this.startDate = start;
         this.endDate = end;
-        this.timer = new Timer();
         this.loadProgramActions(structure);
     }
 
