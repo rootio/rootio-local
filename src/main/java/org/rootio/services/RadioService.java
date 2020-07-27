@@ -89,7 +89,6 @@ public class RadioService implements RootioService, ServiceInformationPublisher 
 
     private void scheduleNextDayAlarm() {
         Date dt = this.getTomorrowBaseDate();
-        //TODO: fill in the logic for scheduling
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
