@@ -1,12 +1,6 @@
 package org.rootio.services;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.telephony.SmsMessage;
-
-import org.rootio.tools.utils.Utils;
+import org.rootio.tools.ipc.BroadcastReceiver;
 
 /**
  * This class is a listener for incoming SMS
@@ -22,18 +16,8 @@ public class IncomingSMSReceiver extends BroadcastReceiver {
     }
 
     @Override
-    public void onReceive(Context context, Intent intent) {
-        try {
-            Bundle bundle = intent.getExtras();
-            Object[] pdus = (Object[]) bundle.get("pdus");
-            for (Object pdu : pdus) {
-                SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) pdu);
-                this.incomingSMSNotifiable.notifyIncomingSMS(smsMessage);
-            }
-        }
-        catch (Exception ex){
+    public void onReceive(Object o) {
 
-        }
     }
 
 }
