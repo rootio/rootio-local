@@ -2,6 +2,7 @@ package org.rootio.tools.utils;
 
 import org.json.JSONObject;
 import org.rootio.configuration.Configuration;
+import org.rootio.services.DiagnosticsService;
 import org.rootio.tools.persistence.DBAgent;
 
 import java.io.*;
@@ -164,11 +165,30 @@ public class Utils {
 
 
     public static void saveJSONPreferences(JSONObject jsonData, String fileName) {
-        File fl = new File(Configuration.getProperty("config_direcroty" + "/" + fileName));
+        File fl = new File(Configuration.getProperty("config_directory" + "/" + fileName));
         try (FileWriter fwr = new FileWriter(fl)) {
             fwr.write(jsonData.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static String loadPreferencesFile(String fileName) {
+        File fl = new File(Configuration.getProperty("config_directory" + "/" + fileName));
+        StringBuilder buffer = new StringBuilder();
+        try(FileReader fr = new FileReader(fl))
+        {
+            while(true) {
+                int c = fr.read();
+                if(c < 0)
+                {
+                    break;
+                }
+                buffer.append((char)c);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return buffer.toString();
     }
 }
