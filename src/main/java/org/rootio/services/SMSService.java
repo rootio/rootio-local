@@ -1,83 +1,59 @@
 package org.rootio.services;
 
-import org.rootio.handset.R;
+import org.rootio.messaging.Message;
 import org.rootio.tools.sms.MessageProcessor;
 import org.rootio.tools.sms.SMSSwitch;
+import org.rootio.tools.utils.EventAction;
+import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
-import android.app.Service;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.IBinder;
-import android.telephony.SmsMessage;
-import android.util.Log;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import static android.provider.Telephony.Sms.Intents.SMS_RECEIVED_ACTION;
-
-public class SMSService extends Service implements IncomingSMSNotifiable, ServiceInformationPublisher {
+public class SMSService  implements RootioService, IncomingSMSNotifiable, ServiceInformationPublisher {
 
     private boolean isRunning;
     private final int serviceId = 2;
     private IncomingSMSReceiver incomingSMSReceiver;
 
-    @Override
-    public IBinder onBind(Intent arg0) {
-       return new BindingAgent(this);
-    }
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
+    public SMSService() {
         this.incomingSMSReceiver = new IncomingSMSReceiver(this);
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startID) {
-        Utils.doNotification(this, "RootIO", "SMS Service started");
-        Utils.logEvent(this, Utils.EventCategory.SERVICES, Utils.EventAction.START, "SMS Service");
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(SMS_RECEIVED_ACTION);
-        this.registerReceiver(this.incomingSMSReceiver, intentFilter);
+    public boolean start() {
+        Utils.logEvent(EventCategory.SERVICES, EventAction.START, "SMS Service");
         this.isRunning = true;
         this.sendEventBroadcast();
-        this.startForeground(this.serviceId, Utils.getNotification(this, "RootIO", "SMS service is running", R.drawable.icon, false, null, null));
-        new ServiceState(this, 2,"SMS", 1).save();
-        return Service.START_STICKY;
+        new ServiceState(2,"SMS", 1).save();
+        return true;
     }
 
     @Override
-    public void onDestroy() {
-        Utils.logEvent(this, Utils.EventCategory.SERVICES, Utils.EventAction.STOP, "SMS Service");
-        this.stopForeground(true);
+    public void stop() {
+        Utils.logEvent(EventCategory.SERVICES, EventAction.STOP, "SMS Service");
         try {
             this.shutDownService();
         }
-        catch(Exception ex)
+        catch(Exception e)
         {
-            Log.e(this.getString(R.string.app_name), String.format("[SMSService.onDestroy] %s", ex.getMessage() == null ? "Null pointer exception" : ex.getMessage()));
+            Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[SMSService.stop]" : e.getMessage());
         }
-        new ServiceState(this, 2,"SMS", 0).save();
-        super.onDestroy();
+        new ServiceState(2,"SMS", 0).save();
     }
 
     private void shutDownService() {
         if (this.isRunning) {
-            this.stopForeground(true);
             this.isRunning = false;
-            try {
-                 this.unregisterReceiver(this.incomingSMSReceiver);
-            } catch (Exception ex) {
-                Log.e(this.getString(R.string.app_name), ex.getMessage() == null ? "Null pointer" : ex.getMessage());
-            }
+            //do shutdown stuff here
             this.sendEventBroadcast();
-            Utils.doNotification(this, "RootIO", "SMS Service stopped");
         }
     }
 
     @Override
-    public void notifyIncomingSMS(SmsMessage message) {
-        Utils.logEvent(this, Utils.EventCategory.SMS, Utils.EventAction.RECEIVE, message.getOriginatingAddress()+ ">>" +message.getMessageBody());
-        SMSSwitch smsSwitch = new SMSSwitch(this, message);
+    public void notifyIncomingSMS(Message message) {
+        Utils.logEvent(EventCategory.SMS, EventAction.RECEIVE, message.getOriginatingAddress()+ ">>" +message.getMessageBody());
+        SMSSwitch smsSwitch = new SMSSwitch(message);
         MessageProcessor messageProcessor = smsSwitch.getMessageProcessor();
         if (messageProcessor != null) {
             messageProcessor.ProcessMessage();
@@ -95,11 +71,7 @@ public class SMSService extends Service implements IncomingSMSNotifiable, Servic
      */
     @Override
     public void sendEventBroadcast() {
-        Intent intent = new Intent();
-        intent.putExtra("serviceId", this.serviceId);
-        intent.putExtra("isRunning", this.isRunning);
-        intent.setAction("org.rootio.services.sms.EVENT");
-        this.sendBroadcast(intent);
+        //
     }
 
     @Override
