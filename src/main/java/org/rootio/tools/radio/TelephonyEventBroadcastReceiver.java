@@ -1,10 +1,7 @@
 package org.rootio.tools.radio;
 
 import org.rootio.activities.services.TelephonyEventNotifiable;
-
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
+import org.rootio.tools.ipc.BroadcastReceiver;
 
 /**
  * This class is used to listen for changes in Telephony service to notify other
@@ -21,9 +18,8 @@ public class TelephonyEventBroadcastReceiver extends BroadcastReceiver {
     }
 
     @Override
-    public void onReceive(Context arg0, Intent intent) {
-        boolean isInCall = intent.getBooleanExtra("Incall", false);
-        notifiable.notifyTelephonyStatus(isInCall);
+    public void onReceive(Object o) {
+        notifiable.notifyTelephonyStatus((boolean)o);
 
     }
 
