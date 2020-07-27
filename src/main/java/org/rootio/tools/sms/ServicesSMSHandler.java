@@ -1,14 +1,12 @@
 package org.rootio.tools.sms;
 
 import org.rootio.services.Notifiable;
-import org.rootio.services.ServiceConnectionAgent;
 import org.rootio.services.ServiceInformationPublisher;
 
 public class ServicesSMSHandler implements MessageProcessor, Notifiable {
 
     private final String from;
     private final String[] messageParts;
-    private ServiceConnectionAgent serviceConnectionAgent;
 
     ServicesSMSHandler(String from, String[] messageParts) {
         this.from = from;
@@ -121,8 +119,7 @@ public class ServicesSMSHandler implements MessageProcessor, Notifiable {
      * @return The intent to be used in communicating with the desired service
      */
     private Object getServiceIntent(int serviceId) {
-        Object intent = null;
-        return intent;
+        return null;
     }
 
     /**
@@ -140,8 +137,7 @@ public class ServicesSMSHandler implements MessageProcessor, Notifiable {
 
     @Override
     public void notifyServiceConnection(int serviceId) {
-        ServiceInformationPublisher service = this.serviceConnectionAgent.getService();
-        this.notifyServiceStatus(serviceId, service.isRunning());
+        //this.notifyServiceStatus(serviceId, service.isRunning());
 
     }
 
