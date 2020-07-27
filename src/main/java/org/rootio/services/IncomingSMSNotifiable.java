@@ -1,6 +1,6 @@
 package org.rootio.services;
 
-import android.telephony.SmsMessage;
+import org.rootio.messaging.Message;
 
 /**
  * This interface is used to decorate all classes that may be notified when an
@@ -15,5 +15,5 @@ public interface IncomingSMSNotifiable {
      *
      * @param message An SmsMessage Object representing the received SMS
      */
-    void notifyIncomingSMS(SmsMessage message);
+    void notifyIncomingSMS(Message message);
 }
