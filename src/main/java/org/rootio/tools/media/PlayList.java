@@ -307,7 +307,7 @@ public class PlayList {
         Random rand = new Random();
         HashSet<Media> media = new HashSet<>();
         for (String playlist : playlists) {
-            String query = "select title, item, itemtypeid from playlist where lower(title) = ?";
+            String query = "select title, item, item_type_id from play_list where lower(title) = ?";
             List<String> args = Arrays.asList(playlist.toLowerCase());
             List<List<Object>> data;
             try {

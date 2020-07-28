@@ -32,7 +32,7 @@ public class DiagnosticStatistics {
       * diagnostics
      */
     private void LoadDiagnosticsData() throws SQLException {
-        String query = "select batterylevel, firstmobilenetworkname, firstmobilenetworktype, firstmobilenetworkconnected, firstmobilenetworkstrength, wificonnected, storageutilization, memoryutilization, cpuutilization, _id, diagnostictime, latitude, longitude  from diagnostic ";
+        String query = "select battery_level, first_mobile_network_name, first_mobile_network_type, first_mobile_network_strength, wifi_connected, storage_utilization, memory_utilization, cpu_utilization, id, diagnostic_time, latitude, longitude  from diagnostic ";
         List<String> filterArgs = Arrays.asList();
         //DBAgent agent = new DBAgent(this.parent);
         List<List<Object>> results = DBAgent.getData(query, filterArgs);

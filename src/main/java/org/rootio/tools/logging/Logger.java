@@ -17,8 +17,8 @@ public class Logger extends BroadcastReceiver {
             values.put("category", record.getCategory());
             values.put("argument", record.getArgument());
             values.put("event", record.getEvent());
-            values.put("eventdate", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
-            return DBAgent.saveData("activitylog", values);
+            values.put("event_date", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
+            return DBAgent.saveData("activity_log", values);
         }
         catch (Exception ex)
         {

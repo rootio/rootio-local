@@ -119,7 +119,7 @@ public class ProgramsHandler implements SynchronizationHandler {
     }
 
     private String getSincePart() {
-        String query = "select max(updatedat) from scheduledprogram";
+        String query = "select max(updated_at) from scheduled_program";
         List<List<Object>> result;
         try {
             result = DBAgent.getData(query, Collections.emptyList());
@@ -136,7 +136,7 @@ public class ProgramsHandler implements SynchronizationHandler {
     }
 
     private long saveRecords(ArrayList<HashMap<String, Object>> values) {
-        String tableName = "scheduledprogram";
+        String tableName = "scheduled_program";
         AtomicLong result = new AtomicLong(0);
 
             values.forEach(row -> {
@@ -156,14 +156,14 @@ public class ProgramsHandler implements SynchronizationHandler {
         data.put("start", Utils.getDateString(start, "yyyy-MM-dd HH:mm:ss"));
         data.put("end", Utils.getDateString(end, "yyyy-MM-dd HH:mm:ss"));
         data.put("structure", structure);
-        data.put("programtypeid", programTypeId);
-        data.put("updatedat", Utils.getDateString(updatedAt, "yyyy-MM-dd HH:mm:ss"));
+        data.put("program_type_id", programTypeId);
+        data.put("updated_at", Utils.getDateString(updatedAt, "yyyy-MM-dd HH:mm:ss"));
         data.put("deleted", deleted);
         return data;
     }
 
     private long deleteRecord(long id) {
-        String tableName = "scheduledprogram";
+        String tableName = "scheduled_program";
         String whereClause = "id = ?";
         List<String> whereArgs = Collections.singletonList(String.valueOf(id));
         try {

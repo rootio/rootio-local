@@ -15,14 +15,6 @@ import java.util.*;
 
 public class Utils {
 
-
-    public static Long getEventTimeId(long programId, Date scheduleDate, int duration) throws SQLException {
-        String query = "select id from eventtime where program_id = ? and duration = ? and schedule_date = ?";
-        List<String> whereArgs = Arrays.asList(String.valueOf(programId), String.valueOf(duration), Utils.getDateString(scheduleDate, "yyyy-MM-dd HH:mm:ss"));
-        List<List<Object>> results = DBAgent.getData(query, whereArgs);
-        return results.size() > 0 ? (Long) results.get(0).get(0) : 0L;
-    }
-
     public static String getCurrentDateAsString(String format) {
         SimpleDateFormat sdf = new SimpleDateFormat(format);
         Date now = Calendar.getInstance().getTime();
@@ -155,8 +147,8 @@ public class Utils {
             values.put("category", category.name());
             values.put("argument", argument);
             values.put("event", action.name());
-            values.put("eventdate", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
-            return DBAgent.saveData("activitylog", values);
+            values.put("event_date", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
+            return DBAgent.saveData("activity_log", values);
         } catch (Exception ex) {
             ex.printStackTrace();
         }

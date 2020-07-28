@@ -32,7 +32,7 @@ public class PlaylistHandler implements SynchronizationHandler {
     @Override
     public void processJSONResponse(JSONObject synchronizationResponse) {
         try {
-            DBAgent.deleteRecords("playlist", null, null);//empty playlist info
+            DBAgent.deleteRecords("play_list", null, null);//empty playlist info
         } catch (SQLException e) {
             Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[PlaylistHandler.processJSONObject]" : e.getMessage());
             return;
@@ -67,9 +67,9 @@ public class PlaylistHandler implements SynchronizationHandler {
         HashMap<String, Object> data = new HashMap<>();
         data.put("title", values.get(0));
         data.put("item", values.get(1));
-        data.put("itemtypeid", type);
+        data.put("item_type_id", type);
         try {
-            DBAgent.saveData("playlist", data);
+            DBAgent.saveData("play_list", data);
         } catch (SQLException e) {
             Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[PlaylistHandler.processJSONObject]" : e.getMessage());
         }

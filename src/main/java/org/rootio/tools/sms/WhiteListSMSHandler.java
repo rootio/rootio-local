@@ -48,9 +48,9 @@ public class WhiteListSMSHandler implements MessageProcessor {
 
     private boolean addNumberToWhitelist(String phoneNumber) {
         try {
-            String tableName = "whitelist";
+            String tableName = "permit_list";
             HashMap<String, Object> data = new HashMap<>();
-            data.put("telephonenumber", phoneNumber);
+            data.put("telephone_number", phoneNumber);
             DBAgent.saveData(tableName, data);
             return true;
         } catch (Exception ex) {
@@ -60,8 +60,8 @@ public class WhiteListSMSHandler implements MessageProcessor {
 
     private boolean removeNumberFromWhitelist(String phoneNumber) {
         try {
-            String tableName = "whitelist";
-            String whereClause = "telephonenumber = ?";
+            String tableName = "permit_list";
+            String whereClause = "telephone_number = ?";
             List<String> whereArgs = Collections.singletonList(phoneNumber);
             DBAgent.deleteRecords(tableName, whereClause, whereArgs);
             return true;
@@ -73,7 +73,6 @@ public class WhiteListSMSHandler implements MessageProcessor {
     @Override
     public void respondAsyncStatusRequest(String from, String data) {
         // TODO Auto-generated method stub
-
     }
 
 }

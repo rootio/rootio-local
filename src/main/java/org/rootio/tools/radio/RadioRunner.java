@@ -224,7 +224,7 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
      * @return ArrayList of Program objects each representing a database record
      */
     private ArrayList<Program> fetchPrograms() {
-        String query = "select id, name, start, end, structure, programtypeid, deleted from scheduledprogram where (date(start) = date(current_timestamp,'localtime') or date(end) = date(current_timestamp,'localtime'))  and not deleted";
+        String query = "select id, name, start, end, structure, program_type_id, deleted from scheduled_program where (date(start) = date(current_timestamp,'localtime') or date(end) = date(current_timestamp,'localtime'))  and not deleted";
         List<String> args = Collections.emptyList();
         ArrayList<Program> programs = new ArrayList<>();
         List<List<Object>> data;

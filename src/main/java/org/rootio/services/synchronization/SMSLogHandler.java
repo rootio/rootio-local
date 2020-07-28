@@ -26,7 +26,7 @@ public class SMSLogHandler implements SynchronizationHandler {
     public JSONObject getSynchronizationData() {
         JSONObject data = new JSONObject();
         JSONArray sms = new JSONArray();
-        String query = "selct id, address, body, date, type from sms where id > ?";
+        String query = "select id, address, body, date, type from sms where id > ?";
         List<String> whereArgs = Collections.singletonList(String.valueOf(this.getMaxId()));
 
         try {

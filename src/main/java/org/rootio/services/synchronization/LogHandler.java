@@ -43,7 +43,7 @@ public class LogHandler implements SynchronizationHandler {
     }
 
     private long deleteSyncedRecord(String id) {
-        String tableName = "activitylog";
+        String tableName = "activity_log";
         String whereClause = "id = ?";
         List<String> filterArgs = Collections.singletonList(id);
         try {
@@ -60,7 +60,7 @@ public class LogHandler implements SynchronizationHandler {
     }
 
     private JSONObject getRecords() {
-        String query = "select id, category, argument, event, eventdate  from activitylog limit 100";
+        String query = "select id, category, argument, event, event_date  from activity_log limit 100";
         List<String> filterArgs = new ArrayList<>();
         JSONObject parent = new JSONObject();
         JSONArray logData = new JSONArray();
@@ -74,7 +74,7 @@ public class LogHandler implements SynchronizationHandler {
                     record.put("category", row.get(1));
                     record.put("argument", row.get(2));
                     record.put("event", row.get(3));
-                    record.put("eventdate", row.get(4));
+                    record.put("event_date", row.get(4));
                     logData.put(record);
                 } catch (JSONException e) {
                     e.printStackTrace();
