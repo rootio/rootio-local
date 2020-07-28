@@ -112,15 +112,14 @@ public class DiagnosticsService implements RootioService {
         private void logToDB() {
             String tableName = "diagnostic";
             HashMap<String, Object> values = new HashMap<>();
-            values.put("batterylevel", diagnosticAgent.getBatteryLevel());
-            values.put("memoryutilization", diagnosticAgent.getMemoryStatus());
-            values.put("storageutilization", diagnosticAgent.getStorageStatus());
-            values.put("CPUutilization", diagnosticAgent.getCPUUtilization());
-            values.put("wificonnected", diagnosticAgent.isConnectedToWifi());
-            values.put("firstmobilenetworkname", diagnosticAgent.getTelecomOperatorName());
-            values.put("firstmobilenetworkconnected", diagnosticAgent.isConnectedToMobileNetwork());
-            values.put("firstmobilenetworkstrength", diagnosticAgent.getMobileSignalStrength());
-            values.put("firstmobilenetworktype", diagnosticAgent.getMobileNetworkType());
+            values.put("battery_level", diagnosticAgent.getBatteryLevel());
+            values.put("memory_utilization", diagnosticAgent.getMemoryStatus());
+            values.put("storage_utilization", diagnosticAgent.getStorageStatus());
+            values.put("cpu_utilization", diagnosticAgent.getCPUUtilization());
+            values.put("wifi_connected", diagnosticAgent.isConnectedToWifi());
+            values.put("first_mobile_network", diagnosticAgent.getTelecomOperatorName());
+            values.put("first_mobile_network_strength", diagnosticAgent.getMobileSignalStrength());
+            values.put("first_mobile_network_type", diagnosticAgent.getMobileNetworkType());
             values.put("latitude", diagnosticAgent.getLatitude());
             values.put("longitude", diagnosticAgent.getLongitude());
             try {
