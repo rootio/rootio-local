@@ -106,7 +106,7 @@ public class ServiceState {
         HashMap<String, Object> data = new HashMap<>();
         data.put("id", serviceId);
         data.put("service", serviceName);
-        data.put("service_state", serviceState);
+        data.put("state", serviceState);
         data.put("last_updated_date", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
         try {
             DBAgent.saveData(tableName, data);
