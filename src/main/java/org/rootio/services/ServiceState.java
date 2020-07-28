@@ -102,12 +102,12 @@ public class ServiceState {
 
     private void insertServiceState()
     {
-        String tableName = "servicestate";
+        String tableName = "service_state";
         HashMap<String, Object> data = new HashMap<>();
         data.put("id", serviceId);
         data.put("service", serviceName);
-        data.put("servicestate", serviceState);
-        data.put("lastupdateddate", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
+        data.put("service_state", serviceState);
+        data.put("last_updated_date", Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
         try {
             DBAgent.saveData(tableName, data);
         } catch (SQLException e) {
