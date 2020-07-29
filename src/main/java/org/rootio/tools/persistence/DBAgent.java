@@ -22,15 +22,9 @@ import java.util.stream.Stream;
 
 public class DBAgent {
 
-    private static String databaseName = Configuration.getProperty("database_file");
-    private static String databaseUrl;
+    private static String databaseUrl = Configuration.getProperty("database_url");
     private static Semaphore semaphore = new Semaphore(1);
 
-    static {
-        if (!databaseFileExists()) {
-            createDatabaseFile();
-        }
-    }
 
     /**
      * Gets a database connection to the specified database
@@ -147,57 +141,6 @@ public class DBAgent {
         return query.toString();
     }
 
-    /**
-     * Checks if the database file exists
-     *
-     * @return Boolean indicating whether or not the database file exists
-     */
-    private static synchronized boolean databaseFileExists() {
-        File databaseFile = new File(databaseName);
-        return databaseFile.exists();
-    }
-
-    /**
-     * Creates the database file upon first run of the application
-     */
-    private static void createDatabaseFile() {
-        InputStream instr = null;
-        FileOutputStream foutstr = null;
-        File destinationFile = null;
-        try {
-            instr = DBAgent.class.getClassLoader().getResourceAsStream("rootio.sqlite");
-
-            byte[] buffer = new byte[1024000]; // 1 MB
-            instr.read(buffer);
-            destinationFile = new File(databaseName);
-            if (destinationFile.exists()) {
-                destinationFile.delete();
-            }
-            if (destinationFile.createNewFile()) {
-                foutstr = new FileOutputStream(destinationFile);
-                foutstr.write(buffer);
-                databaseUrl = "jdbc:sqlite:"+Configuration.getProperty("database_file");
-            } else {
-                throw new IOException("Failed to create database file! Maybe you are out of space");
-            }
-        } catch (IOException ex) {
-            Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.createDatabaseFile)" : ex.getMessage());
-
-        } finally {
-            try {
-                instr.close();
-            } catch (Exception ex) {
-                Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.createDatabaseFile)" : ex.getMessage());
-            }
-
-            try {
-                foutstr.close();
-            } catch (Exception ex) {
-                Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.createDatabaseFile)" : ex.getMessage());
-            }
-        }
-
-    }
 
     /**
      * Retrieves records from  the DB according to specified criteria

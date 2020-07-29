@@ -2,6 +2,7 @@ package org.rootio.services.synchronization;
 
 import org.json.JSONObject;
 import org.rootio.configuration.Configuration;
+import org.rootio.launcher.Rootio;
 import org.rootio.tools.utils.EventAction;
 import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
@@ -19,8 +20,15 @@ public class SynchronizationDaemon implements Runnable {
 
     @Override
     public void run() {
+        while (Rootio.isRunning()) {
         this.musicListHandler = new MusicListHandler();
         this.synchronize();
+            try {
+                Thread.sleep(getFrequency() * 1000);
+            } catch (InterruptedException e) {
+                Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[DiagnosticsRunner.run]" : e.getMessage());
+            }
+        }
     }
 
     private Long getCurrentTime() {
@@ -109,19 +117,6 @@ public class SynchronizationDaemon implements Runnable {
         return syncDaemon;
     }
 
-    /**
-     * Causes the thread on which it is called to sleep for atleast the specified number of milliseconds
-     *
-     * @param milliseconds The number of milliseconds for which the thread is supposed to sleep.
-     */
-    private void getSomeSleep(long milliseconds) {
-        try {
-            Thread.sleep(milliseconds);// frequency is in seconds
-        } catch (InterruptedException e) {
-            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[LogHandler.getSomeSleep]" : e.getMessage());
-        }
-
-    }
 
     /**
      * Fetches the number of seconds representing the interval at which to issue

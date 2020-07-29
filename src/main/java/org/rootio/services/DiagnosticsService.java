@@ -1,6 +1,7 @@
 package org.rootio.services;
 
 import org.json.JSONObject;
+import org.rootio.launcher.Rootio;
 import org.rootio.tools.diagnostics.DiagnosticAgent;
 import org.rootio.tools.persistence.DBAgent;
 import org.rootio.tools.utils.EventAction;
@@ -95,7 +96,7 @@ public class DiagnosticsService implements RootioService {
 
         @Override
         public void run() {
-            while (isRunning) {
+            while (Rootio.isRunning()) {
                 diagnosticAgent.runDiagnostics();
                 this.logToDB();
                 try {
