@@ -9,6 +9,7 @@ import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -118,7 +119,7 @@ public class DiagnosticsService implements RootioService {
             values.put("storage_utilization", diagnosticAgent.getStorageStatus());
             values.put("cpu_utilization", diagnosticAgent.getCPUUtilization());
             values.put("wifi_connected", diagnosticAgent.isConnectedToWifi());
-            values.put("first_mobile_network", diagnosticAgent.getTelecomOperatorName());
+            values.put("first_mobile_network_name", diagnosticAgent.getTelecomOperatorName());
             values.put("first_mobile_network_strength", diagnosticAgent.getMobileSignalStrength());
             values.put("first_mobile_network_type", diagnosticAgent.getMobileNetworkType());
             values.put("latitude", diagnosticAgent.getLatitude());

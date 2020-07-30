@@ -34,7 +34,7 @@ public class LogHandler implements SynchronizationHandler {
 
             for (int i = 0; i < objects.length(); i++) {
                 if (objects.getJSONObject(i).getBoolean("status")) {
-                    this.deleteSyncedRecord(objects.getJSONObject(i).getString("id"));
+                    this.deleteSyncedRecord(objects.getJSONObject(i).getInt("id"));
                 }
             }
         } catch (Exception e) {
@@ -42,10 +42,10 @@ public class LogHandler implements SynchronizationHandler {
         }
     }
 
-    private long deleteSyncedRecord(String id) {
+    private long deleteSyncedRecord(int id) {
         String tableName = "activity_log";
         String whereClause = "id = ?";
-        List<String> filterArgs = Collections.singletonList(id);
+        List<String> filterArgs = Collections.singletonList(String.valueOf(id));
         try {
             return DBAgent.deleteRecords(tableName, whereClause, filterArgs);
         } catch (SQLException e) {
@@ -74,7 +74,7 @@ public class LogHandler implements SynchronizationHandler {
                     record.put("category", row.get(1));
                     record.put("argument", row.get(2));
                     record.put("event", row.get(3));
-                    record.put("event_date", row.get(4));
+                    record.put("eventdate", row.get(4));
                     logData.put(record);
                 } catch (JSONException e) {
                     e.printStackTrace();

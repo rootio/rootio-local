@@ -4,6 +4,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.rootio.configuration.Configuration;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * @author Jude Mukundane, M-ITI/IST-UL
  */
@@ -26,10 +30,11 @@ public class FrequencyHandler implements SynchronizationHandler {
     public void processJSONResponse(JSONObject synchronizationResponse) {
         if (synchronizationResponse != null) {
             try {
-                Configuration.setProperty("diagnostics_frequency", synchronizationResponse.getString("diagnostics_frequency"));
-            Configuration.setProperty("synchronization_frequency", synchronizationResponse.getString("diagnostics_frequency"));
-            } catch (JSONException e) {
-                e.printStackTrace();
+                Configuration.setProperty("diagnostics_frequency", String.valueOf(synchronizationResponse.getJSONObject("diagnostics").getInt("interval")));
+                Configuration.setProperty("synchronization_frequency", String.valueOf(synchronizationResponse.getJSONObject("synchronization").getInt("interval")));
+                Configuration.saveChanges();
+            } catch (JSONException | IOException e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[FrequencyHandler.processJSONResponse]" : e.getMessage());
             }
         }
 

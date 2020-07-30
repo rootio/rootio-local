@@ -74,7 +74,7 @@ public class ServiceState {
 
     private void updateServiceState() {
         String tableName = "service_state";
-        String updateClause = "state = ? and last_update_date = ?";
+        String updateClause = "state = ? and last_updated_date = ?";
         String whereClause = "id = ?";
         List<String> whereArgs = Collections.singletonList(String.valueOf(serviceId));
         List<String> updateArgs = Arrays.asList(String.valueOf(serviceState), Utils.getCurrentDateAsString("yyyy-MM-dd HH:mm:ss"));
@@ -89,7 +89,7 @@ public class ServiceState {
      * Fetches the state of the service as persisted in the database
      */
     private void fetchServiceState() {
-        String query = "select service, state, last_update_date from service_state where id = ?";
+        String query = "select service, state, last_updated_date from service_state where id = ?";
         List<String> whereArgs = Collections.singletonList(String.valueOf(serviceId));
         List<List<Object>> result = null;
         try {

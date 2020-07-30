@@ -15,11 +15,11 @@ import java.util.List;
 
 public class DiagnosticStatistics {
 
-    private List<Double> cpuData, memoryData, storageData, batteryData, mobileNetworkStrength, wifiConnectivityData, latitudeData, longitudeData;
+    private List<Float> cpuData, memoryData, storageData, batteryData, mobileNetworkStrength, latitudeData, longitudeData;
     private List<Date> dateData;
     private List<Integer> idData;
+    private List<Boolean> wifiConnectivityData;
     private List<String> mobileNetworkName, mobileNetworkType;
-    private List<Boolean> mobileNetworkConnected;
     private int size;
 
     public DiagnosticStatistics() throws SQLException {
@@ -45,25 +45,23 @@ public class DiagnosticStatistics {
         mobileNetworkStrength = new ArrayList<>();
         mobileNetworkName = new ArrayList<>();
         mobileNetworkType = new ArrayList<>();
-        mobileNetworkConnected = new ArrayList<>();
         wifiConnectivityData = new ArrayList<>();
         latitudeData = new ArrayList<>();
         longitudeData = new ArrayList<>();
         results.forEach( row ->
         {
-            idData.add((int)row.get(9));
-            dateData.add((Date)row.get(10));
-            batteryData.add((double)row.get(0));
-            cpuData.add((double)row.get(8));
-            storageData.add((double)row.get(6));
-            memoryData.add((double)row.get(7));
-            mobileNetworkStrength.add((double)row.get(4));
+            idData.add((int)row.get(8));
+            dateData.add((Date)row.get(9));
+            batteryData.add((float)row.get(0));
+            cpuData.add((float)row.get(7));
+            storageData.add((float)row.get(5));
+            memoryData.add((float)row.get(6));
+            mobileNetworkStrength.add((float)row.get(3));
             mobileNetworkName.add((String)row.get(1));
             mobileNetworkType.add((String)row.get(2));
-            mobileNetworkConnected.add((Boolean)row.get(3));
-            wifiConnectivityData.add((double)row.get(5));
-            latitudeData.add((double)row.get(11));
-            longitudeData.add((double)row.get(12));
+            wifiConnectivityData.add((boolean)row.get(4));
+            latitudeData.add((float)row.get(10));
+            longitudeData.add((float)row.get(11));
         });
     }
 
@@ -181,7 +179,7 @@ public class DiagnosticStatistics {
      * @return Double representing average WiFI availability for the day
      */
     public double getAverageWiFIAvailability() {
-        return wifiConnectivityData.stream().mapToDouble(d -> d).average().getAsDouble();
+        return wifiConnectivityData.stream().filter(d -> d ).count()/wifiConnectivityData.size();
     }
 
     /**

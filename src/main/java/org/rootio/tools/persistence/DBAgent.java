@@ -160,7 +160,7 @@ public class DBAgent {
             List<List<Object>> data = new ArrayList();
             while (res.next()) {
                 List<Object> row = new ArrayList();
-                int i = 0;
+                int i = 1;
                 while (true) {
                     try {
                         row.add(res.getObject(i));
@@ -169,7 +169,9 @@ public class DBAgent {
                         break;
                     }
                 }
-                data.add(row);
+                if(row.size() > 0) {
+                    data.add(row);
+                }
             }
             return data;
         } catch (SQLException ex) {

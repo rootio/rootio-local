@@ -5,10 +5,13 @@ import java.util.Properties;
 
 public class Configuration {
     private static Properties properties;
+    private static String configFileLocation;
+
 
     public static void load(String fileLocation) throws FileNotFoundException {
         properties = new Properties();
-        loadProperties(fileLocation);
+        configFileLocation = fileLocation;
+        loadProperties(configFileLocation);
     }
 
     private static void loadProperties(String fileLocation) throws FileNotFoundException {
@@ -20,6 +23,10 @@ public class Configuration {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void saveChanges() throws IOException {
+        properties.store(new FileWriter(new File(configFileLocation)), "");
     }
 
     public static String getProperty(String property)
