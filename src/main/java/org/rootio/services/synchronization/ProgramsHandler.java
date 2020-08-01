@@ -58,13 +58,13 @@ public class ProgramsHandler implements SynchronizationHandler {
                     }
                 }
 
-                values.add(getContentValues(results.getJSONObject(i).getInt("scheduled_program_id"), results.getJSONObject(i).getString("name"), Utils.getDateFromString(results.getJSONObject(i).getString("start"), "yyyy-MM-dd'T'HH:mm:ss"), Utils.getDateFromString(results.getJSONObject(i).getString("end"), "yyyy-MM-dd'T'HH:mm:ss"), results.getJSONObject(i).getString("structure"), Utils.getDateFromString(results.getJSONObject(i).getString("updated_at"), "yyyy-MM-dd'T'HH:mm:ss"), results.getJSONObject(i).getString("program_type_id"), results.getJSONObject(i).getBoolean("deleted")));
+                values.add(getContentValues(results.getJSONObject(i).getInt("scheduled_program_id"), results.getJSONObject(i).getString("name"), Utils.getDateFromString(results.getJSONObject(i).getString("start"), "yyyy-MM-dd'T'HH:mm:ss"), Utils.getDateFromString(results.getJSONObject(i).getString("end"), "yyyy-MM-dd'T'HH:mm:ss"), results.getJSONObject(i).getString("structure"), Utils.getDateFromString(results.getJSONObject(i).getString("updated_at"), "yyyy-MM-dd'T'HH:mm:ss"), results.getJSONObject(i).getInt("program_type_id"), results.getJSONObject(i).getBoolean("deleted")));
             }
             if(values.size() > 0) {
                 result = this.saveRecords(values) > 0;
             }
             if (result && hasChanges) {
-                this.announceScheduleChange(shouldRestart);
+               // this.announceScheduleChange(shouldRestart);
             }
             // we had a full page, maybe more records..
             this.requestSync(results.length() == this.records);
@@ -149,7 +149,7 @@ public class ProgramsHandler implements SynchronizationHandler {
         return result.get();
     }
 
-    private HashMap<String, Object> getContentValues(int id, String name, Date start, Date end, String structure, Date updatedAt, String programTypeId, Boolean deleted) {
+    private HashMap<String, Object> getContentValues(int id, String name, Date start, Date end, String structure, Date updatedAt, int programTypeId, Boolean deleted) {
         HashMap<String, Object> data = new HashMap();
         data.put("id", id);
         data.put("name", name);

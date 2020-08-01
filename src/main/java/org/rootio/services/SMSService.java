@@ -21,12 +21,11 @@ public class SMSService  implements RootioService, IncomingSMSNotifiable, Servic
     }
 
     @Override
-    public boolean start() {
+    public void start() {
         Utils.logEvent(EventCategory.SERVICES, EventAction.START, "SMS Service");
         this.isRunning = true;
         this.sendEventBroadcast();
         new ServiceState(2,"SMS", 1).save();
-        return true;
     }
 
     @Override
