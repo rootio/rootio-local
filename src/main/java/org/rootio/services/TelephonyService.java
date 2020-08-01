@@ -18,7 +18,7 @@ public class TelephonyService implements RootioService, ServiceInformationPublis
     private String currentCallingNumber;
 
     @Override
-    public boolean start() {
+    public void start() {
         Utils.logEvent(EventCategory.SERVICES, EventAction.START, "Telephony Service");
         if (!isRunning) {
             this.waitForCalls();
@@ -26,7 +26,6 @@ public class TelephonyService implements RootioService, ServiceInformationPublis
             this.sendEventBroadcast();
         }
         new ServiceState(1,"Telephony", 1).save();
-        return true;
     }
 
     @Override

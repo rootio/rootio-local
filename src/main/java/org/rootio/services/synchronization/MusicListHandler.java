@@ -78,7 +78,7 @@ public class MusicListHandler implements SynchronizationHandler {
                         music.put(artist, new JSONObject());
                     }
 
-                    String album = row.get(3) == null ? "unknown" : (String) row.get(3);
+                    String album = row.get(3) == null ? "unknown" : (String) row.get(1);
                     album = album.replace("\u2019", "'").replace("\u2018", "'");
 
                     if (!music.getJSONObject(artist).has(album)) {

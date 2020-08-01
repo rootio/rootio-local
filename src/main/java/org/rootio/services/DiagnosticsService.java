@@ -9,7 +9,6 @@ import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
 import java.sql.SQLException;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,34 +20,40 @@ public class DiagnosticsService implements RootioService {
     private Thread runnerThread;
 
 
-    public boolean start() {
+    public void start() {
         Utils.logEvent(EventCategory.SERVICES, EventAction.START, "Diagnostics Service");
-        if (!this.isRunning) {
-            long delay = this.getDelay();
-            delay = delay > 0 ? this.getMillisToSleep("seconds", delay) : 10000; // 10000 default
-            DiagnosticsRunner diagnosticsRunner = new DiagnosticsRunner(delay);
-            runnerThread = new Thread(diagnosticsRunner);
-            runnerThread.start();
-            this.isRunning = true;
+        long delay = this.getDelay();
+        delay = delay > 0 ? this.getMillisToSleep("seconds", delay) : 10000; // 10000 default
+        DiagnosticsRunner diagnosticsRunner = new DiagnosticsRunner(delay);
+        runnerThread = new Thread(diagnosticsRunner);
+        runnerThread.start();
+        this.isRunning = true;
+
+        new ServiceState(serviceId, "Diagnostic", 1).save();
+        while (Rootio.isRunning()) {
+            try {
+                Thread.currentThread().wait();
+            } catch (InterruptedException e) {
+                if (!Rootio.isRunning()) {
+                    runnerThread.interrupt();
+                }
+            }
         }
-        return isRunning;
     }
 
     @Override
     public void stop() {
         Utils.logEvent(EventCategory.SERVICES, EventAction.STOP, "Diagnostics Service");
-        try
-        {
+        try {
             this.shutDownService();
-        }catch(Exception e)
-        {
+        } catch (Exception e) {
             Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[DiagnosticsService.stop]" : e.getMessage());
         }
-        new ServiceState(3,"Diagnostic", 0).save();
+        new ServiceState(serviceId, "Diagnostic", 0).save();
     }
 
     private void shutDownService() {
-                 this.isRunning = false;
+        this.isRunning = false;
     }
 
     @Override
@@ -69,7 +74,7 @@ public class DiagnosticsService implements RootioService {
      * Get the time in milliseconds for which to sleep given the unit and
      * quantity
      *
-     * @param units   The measure of the interval supplied by the cloud. This will always be seconds hence this is redundant
+     * @param units    The measure of the interval supplied by the cloud. This will always be seconds hence this is redundant
      * @param quantity The quantity of units to be used in measuring time
      * @return The amount of time in milliseconds
      */
@@ -125,7 +130,7 @@ public class DiagnosticsService implements RootioService {
             values.put("latitude", diagnosticAgent.getLatitude());
             values.put("longitude", diagnosticAgent.getLongitude());
             try {
-                DBAgent.saveData(tableName,  values);
+                DBAgent.saveData(tableName, values);
             } catch (SQLException e) {
                 Logger.getLogger("RootIO").log(Level.SEVERE, e.getMessage() == null ? "Null pointer[DiagnosticsRunner.run]" : e.getMessage());
             }

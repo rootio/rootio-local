@@ -1,5 +1,6 @@
 package org.rootio.services;
 
+import org.rootio.launcher.Rootio;
 import org.rootio.tools.media.Program;
 import org.rootio.tools.radio.RadioRunner;
 import org.rootio.tools.utils.EventAction;
@@ -19,25 +20,30 @@ public class RadioService implements RootioService, ServiceInformationPublisher 
     private Timer timer;
 
     @Override
-    public boolean start() {
+    public void start() {
         Utils.logEvent(EventCategory.SERVICES, EventAction.START, "Radio Service");
-        if (!this.isRunning) {
-            this.timer = new Timer();
-            runTodaySchedule();
-            this.isRunning = true;
-            this.sendEventBroadcast();
-        }
+        this.timer = new Timer();
+        runnerThread = new Thread(() -> runTodaySchedule());
+        runnerThread.start();
+        runTodaySchedule();
+        this.isRunning = true;
+        this.sendEventBroadcast();
         new ServiceState(4, "Radio", 1).save();
-        return true;
+        while (Rootio.isRunning()) {
+            try {
+                Thread.currentThread().wait();
+            } catch (InterruptedException e) {
+                if (!Rootio.isRunning()) {
+                    runnerThread.interrupt();
+                }
+            }
+        }
     }
 
     private void runTodaySchedule() {
         radioRunner = RadioRunner.getInstance();
-        runnerThread = new Thread(radioRunner);
-        runnerThread.start();
         this.scheduleNextDayAlarm();
     }
-
 
 
     @Override
@@ -106,24 +112,20 @@ public class RadioService implements RootioService, ServiceInformationPublisher 
         return cal.getTime();
     }
 
-    private void setInCall(boolean inCall)
-    {
+    private void setInCall(boolean inCall) {
 
     }
 
-    private void setInSIPCall(boolean inSIPCall)
-    {
+    private void setInSIPCall(boolean inSIPCall) {
 
     }
 
-    private boolean getInCall()
-    {
+    private boolean getInCall() {
         return false;
     }
 
-    private boolean getInSIPCall()
-    {
-       return false;
+    private boolean getInSIPCall() {
+        return false;
     }
 
     public RadioService() {

@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 public class DBAgent {
 
     private static String databaseUrl = Configuration.getProperty("database_url");
-    private static Semaphore semaphore = new Semaphore(1);
 
 
     /**
@@ -33,14 +32,9 @@ public class DBAgent {
      */
     private static synchronized Connection getDBConnection(String databaseUrl) throws SQLException {
         try {
-            semaphore.acquire();
             return DriverManager.getConnection(databaseUrl);
         } catch (SQLException ex) {
             throw (ex);
-        } catch (InterruptedException e) {
-            return null;
-        } finally {
-            semaphore.release();
         }
     }
 
@@ -124,7 +118,9 @@ public class DBAgent {
     private static String generateDeleteQuery(String tableName, String whereClause) {
         StringBuffer query = new StringBuffer();
         query.append(" delete from " + tableName);
-        query.append(" where " + whereClause);
+        if(whereClause != null) {
+            query.append(" where " + whereClause);
+        }
         return query.toString();
     }
 
@@ -176,8 +172,29 @@ public class DBAgent {
             return data;
         } catch (SQLException ex) {
             throw ex;
-        } finally {
-            semaphore.release();
+        }
+    }
+
+    /**
+     * Saves records to a table in the DB
+     * @param query the SQL query to be executed to insert records
+     * @param parameters a list of parameters for the query
+     * @return number of rows affected by the Sql transaction
+     * @throws SQLException
+     */
+    public static synchronized long saveData(String query, List<String> parameters) throws SQLException {
+        try (Connection con = getDBConnection(databaseUrl)) {
+            PreparedStatement parameterisedQuery = con.prepareStatement(query);
+            final AtomicInteger i = new AtomicInteger(0);
+            for (String parameter : parameters) {
+                parameterisedQuery.setObject(i.incrementAndGet(), parameter);
+            }
+            return parameterisedQuery.executeUpdate();
+        } catch (SQLException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.saveData)" : ex.getMessage());
+            throw ex;
         }
     }
 
@@ -203,8 +220,6 @@ public class DBAgent {
         } catch (Exception ex) {
             Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.saveData)" : ex.getMessage());
             throw ex;
-        } finally {
-            semaphore.release();
         }
     }
 
@@ -217,21 +232,21 @@ public class DBAgent {
      * @throws SQLException
      */
     public static synchronized long deleteRecords(String tableName, String whereClause, List<String> whereArgs) throws SQLException {
+        long result;
         try (Connection con = getDBConnection(databaseUrl)) {
             PreparedStatement query = con.prepareStatement(generateDeleteQuery(tableName, whereClause));
             final AtomicInteger i = new AtomicInteger(0);
             for (String arg : whereArgs) {
                 query.setObject(i.incrementAndGet(), arg);
             }
-            return query.executeUpdate();
+            result = query.executeUpdate();
         } catch (SQLException ex) {
             throw ex;
         } catch (Exception ex) {
             Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.saveData)" : ex.getMessage());
             throw ex;
-        } finally {
-            semaphore.release();
         }
+        return result;
     }
 
 
@@ -258,8 +273,6 @@ public class DBAgent {
         } catch (Exception ex) {
             Logger.getLogger("org.rootio", ex.getMessage() == null ? "Null pointer exception(DBAgent.saveData)" : ex.getMessage());
             throw ex;
-        } finally {
-            semaphore.release();
         }
     }
 

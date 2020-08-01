@@ -1,5 +1,6 @@
 package org.rootio.services;
 
+import org.rootio.launcher.Rootio;
 import org.rootio.services.synchronization.SynchronizationDaemon;
 import org.rootio.tools.utils.EventAction;
 import org.rootio.tools.utils.EventCategory;
@@ -10,21 +11,30 @@ import java.util.logging.Logger;
 
 public class SynchronizationService implements RootioService, ServiceInformationPublisher {
 
+    private Thread synchronizationThread;
     private final int serviceId = 5;
     private boolean isRunning;
 
     @Override
-    public boolean start() {
+    public void start() {
         Utils.logEvent(EventCategory.SERVICES, EventAction.START, "Synchronization Service");
         if (!this.isRunning) {
             SynchronizationDaemon synchronizationDaemon = SynchronizationDaemon.getInstance();
-            Thread thread = new Thread(synchronizationDaemon);
+            synchronizationThread = new Thread(synchronizationDaemon);
             this.isRunning = true;
-            thread.start();
+            synchronizationThread.start();
             this.sendEventBroadcast();
         }
         new ServiceState(5,"Synchronization", 1).save();
-        return true;
+        while(Rootio.isRunning()) {
+            try {
+                Thread.currentThread().wait();
+            } catch (InterruptedException e) {
+                if(!Rootio.isRunning()) {
+                    synchronizationThread.interrupt();
+                }
+            }
+        }
     }
 
     @Override

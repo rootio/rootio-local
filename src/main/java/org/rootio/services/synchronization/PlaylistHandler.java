@@ -8,6 +8,7 @@ import org.rootio.tools.persistence.DBAgent;
 
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
@@ -32,7 +33,7 @@ public class PlaylistHandler implements SynchronizationHandler {
     @Override
     public void processJSONResponse(JSONObject synchronizationResponse) {
         try {
-            DBAgent.deleteRecords("play_list", null, null);//empty playlist info
+            DBAgent.deleteRecords("play_list", null, Collections.EMPTY_LIST);//empty playlist info
         } catch (SQLException e) {
             Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[PlaylistHandler.processJSONObject]" : e.getMessage());
             return;
@@ -69,7 +70,7 @@ public class PlaylistHandler implements SynchronizationHandler {
         data.put("item", values.get(1));
         data.put("item_type_id", type);
         try {
-            DBAgent.saveData("play_list", data);
+            return DBAgent.saveData("play_list", data);
         } catch (SQLException e) {
             Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[PlaylistHandler.processJSONObject]" : e.getMessage());
         }

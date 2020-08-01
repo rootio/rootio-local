@@ -2,6 +2,8 @@ package org.rootio.launcher;
 
 import org.rootio.configuration.Configuration;
 import org.rootio.services.DiagnosticsService;
+import org.rootio.services.MediaIndexingService;
+import org.rootio.services.RadioService;
 import org.rootio.services.SynchronizationService;
 
 import java.io.FileNotFoundException;
@@ -9,12 +11,14 @@ import java.io.FileNotFoundException;
 public class Rootio {
     private static DiagnosticsService diagnosticsService;
     private static SynchronizationService synchronizationService;
-    private static Thread diagnosticsThread, synchronizationThread;
+    private static MediaIndexingService mediaIndexingService;
+    private static RadioService radioService;
+    private static Thread diagnosticsThread, synchronizationThread, mediaIndexingThread, radioServiceThread;
     private static boolean isRunning = true;
 
     public static void main(String[] args) {
         try {
-            prepareConfig(args[0]);
+            prepareConfig("C:\\rootio\\rootio.conf");
             runServices();
             registerShutDownHook();
             Thread.currentThread().wait();
@@ -24,6 +28,8 @@ public class Rootio {
             if (!isRunning) {
                 diagnosticsThread.interrupt();
                 synchronizationThread.interrupt();
+                mediaIndexingThread.interrupt();
+                radioServiceThread.interrupt();
             }
         }
     }
@@ -40,6 +46,14 @@ public class Rootio {
         synchronizationService = new SynchronizationService();
         synchronizationThread = new Thread(() -> synchronizationService.start());
         synchronizationThread.start();
+
+        mediaIndexingService = new MediaIndexingService();
+        mediaIndexingThread = new Thread(() -> mediaIndexingService.start());
+        mediaIndexingThread.start();
+
+        radioService= new RadioService();
+        radioServiceThread = new Thread(() -> radioService.start());
+        radioServiceThread.start();
     }
 
     public static boolean isRunning()
