@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="org.jaudiotagger:jaudiotagger:2.0.1" type="repository">
+    <properties maven-id="org.jaudiotagger:jaudiotagger:2.0.1" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jaudiotagger/jaudiotagger/2.0.1/jaudiotagger-2.0.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
