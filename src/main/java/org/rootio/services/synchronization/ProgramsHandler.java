@@ -125,7 +125,7 @@ public class ProgramsHandler implements SynchronizationHandler {
             result = DBAgent.getData(query, Collections.emptyList());
             if (!result.isEmpty()) {
                 Calendar cal = Calendar.getInstance();
-                cal.setTime(Utils.getDateFromString((String)result.get(0).get(0), "yyyy-MM-dd HH:mm:ss"));
+                cal.setTime((Date)result.get(0).get(0));
                 cal.add(Calendar.SECOND, 1); //Add 1 second, server side compares using greater or equal
                 return String.format("updated_since=%s&records=%s", Utils.getDateString(cal.getTime(), "yyyy-MM-dd'T'HH:mm:ss"), records);
             }
@@ -150,7 +150,7 @@ public class ProgramsHandler implements SynchronizationHandler {
     }
 
     private HashMap<String, Object> getContentValues(int id, String name, Date start, Date end, String structure, Date updatedAt, int programTypeId, Boolean deleted) {
-        HashMap<String, Object> data = new HashMap();
+        HashMap<String, Object> data = new HashMap<>();
         data.put("id", id);
         data.put("name", name);
         data.put("start", Utils.getDateString(start, "yyyy-MM-dd HH:mm:ss"));
