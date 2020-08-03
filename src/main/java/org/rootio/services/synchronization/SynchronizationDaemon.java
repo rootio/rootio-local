@@ -41,8 +41,7 @@ public class SynchronizationDaemon implements Runnable {
                 SynchronizationDaemon.this.synchronize(new DiagnosticsHandler(), 1);
 
             //if the syncLock is greater than 5 mins old, do not consider it.
-            if (!(SynchronizationDaemon.this.syncLocks.containsKey(2) && SynchronizationDaemon.this.syncLocks.get(2) < (getCurrentTime() + 300000))) {
-                SynchronizationDaemon.this.syncLocks.put(2, getCurrentTime());
+            if (!SynchronizationDaemon.this.syncLocks.containsKey(2)) {
                 SynchronizationDaemon.this.synchronize(new ProgramsHandler(), 2);
             }
             if (!SynchronizationDaemon.this.syncLocks.containsKey(3))
