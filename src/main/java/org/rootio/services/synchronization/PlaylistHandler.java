@@ -50,12 +50,12 @@ public class PlaylistHandler implements SynchronizationHandler {
                 // save the Albums
                 JSONArray albums = playlist.getJSONArray("albums");
                 for (int j = 0; j < albums.length(); j++) {
-                    savePlaylistItem(Arrays.asList(playlist.getString("title"), songs.getJSONObject(j).getString("title")), "2");
+                    savePlaylistItem(Arrays.asList(playlist.getString("title"), albums.getJSONObject(j).getString("title")), "2");
                 }
                 // save the Artists
                 JSONArray artists = playlist.getJSONArray("artists");
                 for (int j = 0; j < artists.length(); j++) {
-                    savePlaylistItem(Arrays.asList(playlist.getString("title"), songs.getJSONObject(j).getString("title")), "3");
+                    savePlaylistItem(Arrays.asList(playlist.getString("title"), artists.getJSONObject(j).getString("title")), "3");
                 }
             }
         } catch (JSONException e) {
