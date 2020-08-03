@@ -25,7 +25,6 @@ public class RadioService implements RootioService, ServiceInformationPublisher 
         this.timer = new Timer();
         runnerThread = new Thread(() -> runTodaySchedule());
         runnerThread.start();
-        runTodaySchedule();
         this.isRunning = true;
         this.sendEventBroadcast();
         new ServiceState(4, "Radio", 1).save();
@@ -43,6 +42,8 @@ public class RadioService implements RootioService, ServiceInformationPublisher 
     private void runTodaySchedule() {
         radioRunner = RadioRunner.getInstance();
         this.scheduleNextDayAlarm();
+        radioRunner.run();
+
     }
 
 
