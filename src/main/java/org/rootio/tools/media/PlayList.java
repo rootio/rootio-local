@@ -8,6 +8,8 @@ import org.rootio.tools.utils.EventAction;
 import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Level;
@@ -81,7 +83,7 @@ public class PlayList {
      */
     public void play() {
         this.maxVolume = this.getMaxVolume();
-        new Thread(() -> startPlayer()).start();
+        new Thread(this::startPlayer).start();
         //  startPlayer();
         this.callSignProvider.start();
 
@@ -112,7 +114,7 @@ public class PlayList {
                         this.foundMedia = true;
                         new Thread(() -> Utils.doPostHTTP(String.format("%s://%s:%s/%s/%s/programs?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/media_play", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version")), "")).start();
 
-                    } catch (NullPointerException ex) {
+                    } catch ( NullPointerException ex) {
                         //Log.e(this.parent.getString(R.string.app_name) + " PlayList.startPlayer", ex.getMessage() == null ? "Null pointer exception(PlayList.startPlayer)" : ex.getMessage());
                         this.startPlayer();
                     }
@@ -142,8 +144,11 @@ public class PlayList {
 
     private void playMedia(String uri, Duration seekPosition) {
         this.currentMediaUri = uri;
+        //
+        com.sun.javafx.application.PlatformImpl.startup(()->{});
+
         //begin by raising the volume
-        javafx.scene.media.Media media = new javafx.scene.media.Media(uri);
+        javafx.scene.media.Media media = new javafx.scene.media.Media(new File(uri).toURI().toString());
         mediaPlayer = new MediaPlayer(media);
         mediaPlayer.setOnEndOfMedia(() -> {
             this.foundMedia = false;
@@ -308,7 +313,7 @@ public class PlayList {
         HashSet<Media> media = new HashSet<>();
         for (String playlist : playlists) {
             String query = "select title, item, item_type_id from play_list where lower(title) = ?";
-            List<String> args = Arrays.asList(playlist.toLowerCase());
+            List<String> args = Collections.singletonList(playlist.toLowerCase());
             List<List<Object>> data;
             try {
                 data = DBAgent.getData(query, args);
@@ -318,14 +323,14 @@ public class PlayList {
             }
             data.forEach(row -> {
                 try {
-                    switch ((String) row.get(2)) {
-                        case "1"://songs
+                    switch ((int) row.get(2)) {
+                        case 1://songs
                             media.addAll(this.mediaLib.getMedia((String) row.get(1), "title"));
                             break;
-                        case "2":// albums
+                        case 2:// albums
                             media.addAll(this.mediaLib.getMedia((String) row.get(1), "album"));
                             break;
-                        case "3":// artists
+                        case 3:// artists
                             media.addAll(this.mediaLib.getMedia((String) row.get(1), "artist"));
                             break;
                     }
@@ -398,7 +403,7 @@ public class PlayList {
         private boolean isRunning;
 
         CallSignProvider() {
-            ArrayList<String> jingles = new ArrayList();
+            ArrayList<String> jingles = new ArrayList<>();
             jingles.add("jingle");
             jingles.add("jingles");
             this.callSigns = PlayList.this.loadMedia(jingles);

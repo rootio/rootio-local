@@ -39,22 +39,22 @@ public class Rootio {
     }
 
     private static void runServices() {
-        diagnosticsService = new DiagnosticsService();
-        diagnosticsThread = new Thread(() -> diagnosticsService.start());
-        diagnosticsThread.start();
-
-        synchronizationService = new SynchronizationService();
-        synchronizationThread = new Thread(() -> synchronizationService.start());
-        synchronizationThread.start();
-
-        mediaIndexingService = new MediaIndexingService();
-        mediaIndexingThread = new Thread(() -> mediaIndexingService.start());
-        mediaIndexingThread.start();
+//        diagnosticsService = new DiagnosticsService();
+//        diagnosticsThread = new Thread(() -> diagnosticsService.start());
+//        diagnosticsThread.start();
+//
+//        synchronizationService = new SynchronizationService();
+//        synchronizationThread = new Thread(() -> synchronizationService.start());
+//        synchronizationThread.start();
+//
+//        mediaIndexingService = new MediaIndexingService();
+//        mediaIndexingThread = new Thread(() -> mediaIndexingService.start());
+//        mediaIndexingThread.start();
 
         radioService= new RadioService();
         radioServiceThread = new Thread(() -> radioService.start());
         radioServiceThread.start();
-    }
+ }
 
     public static boolean isRunning()
     {
