@@ -20,10 +20,10 @@ public class ScheduleBroadcastHandler  extends TimerTask {
     @Override
     public void run() {
         if (!this.notifiable.isExpired(scheduleIndex)) {
-            Logger.getLogger("RootIO").log(Level.INFO, "Program with index "+ scheduleIndex + " expired");
+            Logger.getLogger("RootIO").log(Level.INFO, "Program with index "+ scheduleIndex + " not expired");
             this.notifiable.runProgram(scheduleIndex);
         } else {
-            Logger.getLogger("RootIO").log(Level.INFO, "Program with index "+ scheduleIndex + " not expired");
+            Logger.getLogger("RootIO").log(Level.INFO, "Program with index "+ scheduleIndex + " expired");
         }
     }
 }
