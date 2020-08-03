@@ -224,7 +224,7 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
      * @return ArrayList of Program objects each representing a database record
      */
     private ArrayList<Program> fetchPrograms() {
-        String query = "select id, name, start, end, structure, program_type_id, deleted from scheduled_program where (date(start) = date(current_timestamp,'localtime') or date(end) = date(current_timestamp,'localtime'))  and not deleted";
+        String query = "select id, name, start, end, structure, program_type_id, deleted from scheduled_program where (date(start) = date(current_timestamp) or date(end) = date(current_timestamp))  and not deleted";
         List<String> args = Collections.emptyList();
         ArrayList<Program> programs = new ArrayList<>();
         List<List<Object>> data;
@@ -232,7 +232,7 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
             data = DBAgent.getData(query, args);
             for (List<Object> row : data) {
                 Program program;
-                program = new Program((String)row.get(1), Utils.getDateFromString((String)row.get(2), "yyyy-MM-dd HH:mm:ss"), Utils.getDateFromString((String)row.get(3), "yyyy-MM-dd HH:mm:ss"), (String)row.get(4));
+                program = new Program((String)row.get(1), (Date)row.get(2), (Date)row.get(3), (String)row.get(4));
                 programs.add(program);
             }
             return programs;
