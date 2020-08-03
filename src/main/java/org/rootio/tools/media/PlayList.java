@@ -253,11 +253,9 @@ public class PlayList {
                 if (soft) //typically these are thrown by SIP calls
                 {
                     this.fadeOut();
-
                 }
 
                 Utils.logEvent(EventCategory.MEDIA, EventAction.PAUSE, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
-
                 try {
                     this.mediaPosition = this.mediaPlayer.getCurrentTime();
                     mediaPlayer.stop(); //advised that media players should never be reused, even in pause/play scenarios
@@ -357,7 +355,7 @@ public class PlayList {
     private void onReceiveCallSign(String url) {
         try {
 
-            callSignPlayer = new MediaPlayer(new javafx.scene.media.Media(url));
+            callSignPlayer = new MediaPlayer(new javafx.scene.media.Media(new File(url).toURI().toString()));
             callSignPlayer.setOnEndOfMedia(() -> {
                 try {
                     PlayList.this.mediaPlayer.setVolume(getMaxVolume());
