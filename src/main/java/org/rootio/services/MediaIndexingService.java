@@ -72,7 +72,6 @@ public class MediaIndexingService implements RootioService {
 
     private boolean isIndexingDue() {
         Date lastIndexDate = getLastIndexDate();
-        long days = Duration.between(lastIndexDate.toInstant(), Calendar.getInstance().getTime().toInstant()).toDays();
         return lastIndexDate == null || Duration.between(lastIndexDate.toInstant(), Calendar.getInstance().getTime().toInstant()).toDays() > 7;
     }
 
@@ -157,18 +156,19 @@ public class MediaIndexingService implements RootioService {
      */
     private static void saveRecords(List<List<String>> records) {
         StringBuilder query = new StringBuilder();
-
+        List<String> args = new ArrayList<>();
         query.append("insert into media_tmp (title, artist, album, location, duration) values ");
         String data = String.join(",", records.stream().map(
-                l -> { //L is a List<String> , returns ('field1','field2')
+                l -> { //L is a List<String> , returns (?,?,?)
+                    args.addAll(l); //add to the params list
                     return "(" + String.join(",", l.stream()
-                            .map(s -> "'" + s.replace("'", "''") + "'")
+                            .map(s -> "?")
                             .toArray(String[]::new)) + ")";
                 }).toArray(String[]::new));
 
         query.append(data);
         try {
-            long result = DBAgent.saveData(query.toString(), Collections.emptyList());
+            long result = DBAgent.saveData(query.toString(), args);
             System.out.println("" + result + " songs indexed");
         } catch (SQLException throwable) {
             System.out.println("indexing failed due to SQL error");
