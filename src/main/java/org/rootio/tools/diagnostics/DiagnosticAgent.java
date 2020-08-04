@@ -1,7 +1,16 @@
 package org.rootio.tools.diagnostics;
 
+import oshi.SystemInfo;
+
+import java.io.File;
+import java.net.SocketException;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
 public class DiagnosticAgent {
 
+    private SystemInfo sysInfo;
     private boolean isConnectedToWifi;
     private float batteryLevel;
     private boolean isConnectedToMobileNetwork;
@@ -15,6 +24,7 @@ public class DiagnosticAgent {
 
 
     public DiagnosticAgent() {
+        this.sysInfo = new SystemInfo();
           }
 
     /**
@@ -50,6 +60,14 @@ public class DiagnosticAgent {
      */
     private void loadIsConnectedToWifi() {
         this.isConnectedToWifi = false;
+        Arrays.stream(sysInfo.getHardware().getNetworkIFs()).forEach(networkIF -> {
+            try {
+                isConnectedToWifi = isConnectedToWifi || networkIF.getNetworkInterface().isUp() && !networkIF.getNetworkInterface().isVirtual() && !networkIF.getNetworkInterface().isLoopback();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+        });
+
     }
 
     /**
@@ -57,6 +75,12 @@ public class DiagnosticAgent {
      */
     private void loadBatteryLevel() {
         batteryLevel = 0;
+        Arrays.stream(sysInfo.getHardware().getPowerSources()).forEach(powerSource -> {
+            if(powerSource.getName().toLowerCase().contains("battery"))
+            {
+                batteryLevel = 100f * (float)powerSource.getRemainingCapacity();
+            }
+        });
     }
 
     /**
@@ -76,15 +100,16 @@ public class DiagnosticAgent {
     /**
      * Loads the percentage memory utilization of the phone
      */
-    private void loadMemoryStatus() {
-        memoryStatus = 0;
+    private void loadMemoryStatus()
+    {
+        memoryStatus = 100f * (1f -  (float)sysInfo.getHardware().getMemory().getAvailable()/(float)sysInfo.getHardware().getMemory().getTotal());
     }
 
     /**
      * Loads the percentage CPU Utilization of the phone
      */
     private void loadCPUutilization() {
-        this.CPUUtilization = 0;
+        this.CPUUtilization = 100f * (float)sysInfo.getHardware().getProcessor().getSystemCpuLoad();
     }
 
     /**
@@ -99,7 +124,13 @@ public class DiagnosticAgent {
      * Loads the percentage Utilization of the phone storage
      */
     private void loadStorageUtilization() {
-            this.storageStatus = 0;
+        AtomicLong free = new AtomicLong(0);
+        AtomicLong total = new AtomicLong(0);
+        Arrays.stream(File.listRoots()).forEach(l -> {
+            free.addAndGet(l.getFreeSpace());
+            total.addAndGet(l.getTotalSpace());
+        });
+       this.storageStatus = 100 * (1f - (float)free.get()/(float)total.get());
     }
 
     /**
@@ -118,6 +149,7 @@ public class DiagnosticAgent {
      * connected
      */
     public boolean isConnectedToWifi() {
+
         return this.isConnectedToWifi;
     }
 
