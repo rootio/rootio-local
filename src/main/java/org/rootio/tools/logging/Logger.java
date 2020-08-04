@@ -29,7 +29,7 @@ public class Logger extends BroadcastReceiver {
 
     @Override
     public void onReceive(Message m) {
-        this.log(new LogRecord(m.getCategory(), m.getArgument(), m.getEvent()));
+        this.log(new LogRecord(m.getCategory(), (String)m.getPayLoad().get("message"), m.getEvent()));
     }
 
     public static class LogRecord
