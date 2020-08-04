@@ -1,12 +1,19 @@
 package org.rootio.messaging;
 
-import org.rootio.tools.logging.Logger;
+import java.util.HashMap;
 
 public class Message {
-    private String argument, event, category;
+    private String event, category;
+    private HashMap<String, Object> payLoad;
 
-    public String getArgument() {
-        return argument;
+    public Message(String event, String category, HashMap<String, Object> payLoad) {
+        this.event = event;
+        this.category = category;
+        this.payLoad = payLoad;
+    }
+
+    public HashMap<String, Object> getPayLoad() {
+        return payLoad;
     }
 
     public String getEvent() {
