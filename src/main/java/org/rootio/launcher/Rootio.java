@@ -18,7 +18,7 @@ public class Rootio {
 
     public static void main(String[] args) {
         try {
-            prepareConfig("C:\\rootio\\rootio.conf");
+            prepareConfig(args[0]);
             runServices();
             registerShutDownHook();
             Thread.currentThread().wait();
@@ -39,17 +39,17 @@ public class Rootio {
     }
 
     private static void runServices() {
-//        diagnosticsService = new DiagnosticsService();
-//        diagnosticsThread = new Thread(() -> diagnosticsService.start());
-//        diagnosticsThread.start();
-//
-//        synchronizationService = new SynchronizationService();
-//        synchronizationThread = new Thread(() -> synchronizationService.start());
-//        synchronizationThread.start();
-//
-//        mediaIndexingService = new MediaIndexingService();
-//        mediaIndexingThread = new Thread(() -> mediaIndexingService.start());
-//        mediaIndexingThread.start();
+        diagnosticsService = new DiagnosticsService();
+        diagnosticsThread = new Thread(() -> diagnosticsService.start());
+        diagnosticsThread.start();
+
+        synchronizationService = new SynchronizationService();
+        synchronizationThread = new Thread(() -> synchronizationService.start());
+        synchronizationThread.start();
+
+        mediaIndexingService = new MediaIndexingService();
+        mediaIndexingThread = new Thread(() -> mediaIndexingService.start());
+        mediaIndexingThread.start();
 
         radioService= new RadioService();
         radioServiceThread = new Thread(() -> radioService.start());
@@ -59,7 +59,7 @@ public class Rootio {
     public static boolean isRunning()
     {
         return isRunning;
-    }
+ }
 
     private static void registerShutDownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(Rootio::run));
