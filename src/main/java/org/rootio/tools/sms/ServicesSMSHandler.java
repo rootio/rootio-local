@@ -1,9 +1,6 @@
 package org.rootio.tools.sms;
 
-import org.rootio.services.Notifiable;
-import org.rootio.services.ServiceInformationPublisher;
-
-public class ServicesSMSHandler implements MessageProcessor, Notifiable {
+public class ServicesSMSHandler implements MessageProcessor{
 
     private final String from;
     private final String[] messageParts;
@@ -135,19 +132,8 @@ public class ServicesSMSHandler implements MessageProcessor, Notifiable {
 
     }
 
-    @Override
-    public void notifyServiceConnection(int serviceId) {
-        //this.notifyServiceStatus(serviceId, service.isRunning());
-
-    }
 
     private void notifyServiceStatus(int serviceId, boolean running) {
         this.respondAsyncStatusRequest(this.from, running ? String.format("Service %s running", serviceId) : String.format("Service %s not running", serviceId));
-    }
-
-    @Override
-    public void notifyServiceDisconnection(int serviceId) {
-        // TODO Auto-generated method stub
-
     }
 }
