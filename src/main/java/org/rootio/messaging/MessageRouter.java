@@ -8,10 +8,20 @@ import java.util.stream.Collectors;
 
 public class MessageRouter {
     HashMap<String, List<BroadcastReceiver>> registeredReceivers;
+    private static MessageRouter messageRouter;
 
-    MessageRouter()
+    private MessageRouter()
     {
         registeredReceivers = new HashMap<>();
+    }
+
+    public static MessageRouter getInstance()
+    {
+        if(messageRouter == null)
+        {
+            messageRouter = new MessageRouter();
+        }
+        return messageRouter;
     }
 
     public void register(BroadcastReceiver receiver, String filter)
