@@ -16,15 +16,10 @@ import java.util.logging.Logger;
 
 public class DiagnosticsService implements RootioService {
 
-    private MessageRouter messageRouter;
     private boolean isRunning;
     private int serviceId = 3;
     private Thread runnerThread;
 
-    public DiagnosticsService(MessageRouter messageRouter)
-    {
-        this.messageRouter = messageRouter;
-    }
 
 
     public void start() {

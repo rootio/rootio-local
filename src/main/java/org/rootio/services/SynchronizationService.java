@@ -15,12 +15,7 @@ public class SynchronizationService implements RootioService {
     private Thread synchronizationThread;
     private final int serviceId = 5;
     private boolean isRunning;
-    private MessageRouter messageRouter;
 
-    public SynchronizationService(MessageRouter messageRouter)
-    {
-        this.messageRouter = messageRouter;
-    }
 
     @Override
     public void start() {
