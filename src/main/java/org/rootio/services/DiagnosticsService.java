@@ -2,6 +2,7 @@ package org.rootio.services;
 
 import org.json.JSONObject;
 import org.rootio.launcher.Rootio;
+import org.rootio.messaging.MessageRouter;
 import org.rootio.tools.diagnostics.DiagnosticAgent;
 import org.rootio.tools.persistence.DBAgent;
 import org.rootio.tools.utils.EventAction;
@@ -15,9 +16,15 @@ import java.util.logging.Logger;
 
 public class DiagnosticsService implements RootioService {
 
+    private MessageRouter messageRouter;
     private boolean isRunning;
     private int serviceId = 3;
     private Thread runnerThread;
+
+    public DiagnosticsService(MessageRouter messageRouter)
+    {
+        this.messageRouter = messageRouter;
+    }
 
 
     public void start() {
