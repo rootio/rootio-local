@@ -1,6 +1,7 @@
 package org.rootio.services;
 
 import org.rootio.launcher.Rootio;
+import org.rootio.messaging.MessageRouter;
 import org.rootio.services.synchronization.SynchronizationDaemon;
 import org.rootio.tools.utils.EventAction;
 import org.rootio.tools.utils.EventCategory;
@@ -9,11 +10,17 @@ import org.rootio.tools.utils.Utils;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class SynchronizationService implements RootioService, ServiceInformationPublisher {
+public class SynchronizationService implements RootioService {
 
     private Thread synchronizationThread;
     private final int serviceId = 5;
     private boolean isRunning;
+    private MessageRouter messageRouter;
+
+    public SynchronizationService(MessageRouter messageRouter)
+    {
+        this.messageRouter = messageRouter;
+    }
 
     @Override
     public void start() {
@@ -23,7 +30,6 @@ public class SynchronizationService implements RootioService, ServiceInformation
             synchronizationThread = new Thread(synchronizationDaemon);
             this.isRunning = true;
             synchronizationThread.start();
-            this.sendEventBroadcast();
         }
         new ServiceState(5,"Synchronization", 1).save();
         while(Rootio.isRunning()) {
@@ -53,25 +59,11 @@ public class SynchronizationService implements RootioService, ServiceInformation
     private void shutDownService() {
         if (this.isRunning) {
             this.isRunning = false;
-            this.sendEventBroadcast();
         }
-    }
-
-    /**
-     * Sends out broadcasts informing listeners of changes in service status
-     */
-    public void sendEventBroadcast() {
-        //send event broadcast
     }
 
     @Override
     public boolean isRunning() {
         return this.isRunning;
     }
-
-    @Override
-    public int getServiceId() {
-        return this.serviceId;
-    }
-
 }
