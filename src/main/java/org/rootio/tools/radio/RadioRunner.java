@@ -1,6 +1,9 @@
 package org.rootio.tools.radio;
 
 import org.rootio.activities.services.TelephonyEventNotifiable;
+import org.rootio.messaging.BroadcastReceiver;
+import org.rootio.messaging.Message;
+import org.rootio.messaging.MessageRouter;
 import org.rootio.tools.media.Program;
 import org.rootio.tools.media.ScheduleChangeNotifiable;
 import org.rootio.tools.media.ScheduleNotifiable;
@@ -24,13 +27,13 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
     private ArrayList<Program> programs;
     private Integer runningProgramIndex = null;
     private State state;
-    private TelephonyEventBroadcastReceiver telephonyEventBroadcastReceiver;
-    private ScheduleChangeBroadcastHandler scheduleChangeNotificationReceiver;
+    private BroadcastReceiver telephonyEventBroadcastReceiver, scheduleChangeNotificationReceiver;
     private boolean isPendingScheduleReload;
     private int radioRunnerId;
 
     private RadioRunner() {
         this.radioRunnerId = new Random().nextInt(1000);
+        this.listenForScheduleChangeNotifications();
     }
 
     public static RadioRunner getInstance() {
@@ -38,6 +41,18 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
             runner = new RadioRunner();
         }
         return runner;
+    }
+
+    private void listenForScheduleChangeNotifications()
+    {
+        this.scheduleChangeNotificationReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Message m) {
+                boolean shouldRestart = (boolean)m.getPayLoad().get("shouldRestart");
+                RadioRunner.this.notifyScheduleChange(shouldRestart);
+            }
+        };
+        MessageRouter.getInstance().register(this.scheduleChangeNotificationReceiver, "org.rootio.services.synchronization.SCHEDULE_CHANGE_EVENT");
     }
 
     @Override
