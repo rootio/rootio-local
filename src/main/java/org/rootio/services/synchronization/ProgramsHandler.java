@@ -5,6 +5,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.rootio.configuration.Configuration;
+import org.rootio.messaging.Message;
+import org.rootio.messaging.MessageRouter;
 import org.rootio.tools.persistence.DBAgent;
 import org.rootio.tools.utils.Utils;
 
@@ -18,9 +20,6 @@ import java.util.logging.Logger;
 public class ProgramsHandler implements SynchronizationHandler {
 
    private int records=2000;
-
-    ProgramsHandler() {
-    }
 
     @Override
     public JSONObject getSynchronizationData() {
@@ -64,7 +63,7 @@ public class ProgramsHandler implements SynchronizationHandler {
                 result = this.saveRecords(values) > 0;
             }
             if (result && hasChanges) {
-               // this.announceScheduleChange(shouldRestart);
+               this.announceScheduleChange(shouldRestart);
             }
             // we had a full page, maybe more records..
             this.requestSync(results.length() == this.records);
@@ -106,11 +105,12 @@ public class ProgramsHandler implements SynchronizationHandler {
         }
     }
 
-    private void announceScheduleChange(boolean shouldRestart) throws ExecutionControl.NotImplementedException {
-        throw new ExecutionControl.NotImplementedException("Yet to be implemented");
-//        Intent intent = new Intent("org.rootio.services.synchronization.SCHEDULE_CHANGE_EVENT");
-//        intent.putExtra("shouldRestart", shouldRestart);
-//        this.parent.sendBroadcast(intent);
+    private void announceScheduleChange(boolean shouldRestart) {
+        String filter = "org.rootio.services.synchronization.SCHEDULE_CHANGE_EVENT";
+        HashMap<String, Object> payLoad = new HashMap<>();
+        payLoad.put("shouldRestart", shouldRestart);
+        Message message = new Message("change", "schedule", payLoad);
+        MessageRouter.getInstance().specicast(message, filter);
     }
 
     @Override
