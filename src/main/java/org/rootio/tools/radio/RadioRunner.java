@@ -1,9 +1,11 @@
 package org.rootio.tools.radio;
 
 import org.rootio.activities.services.TelephonyEventNotifiable;
+import org.rootio.launcher.Rootio;
 import org.rootio.messaging.BroadcastReceiver;
 import org.rootio.messaging.Message;
 import org.rootio.messaging.MessageRouter;
+import org.rootio.services.SIP.CallState;
 import org.rootio.tools.media.Program;
 import org.rootio.tools.media.ScheduleChangeNotifiable;
 import org.rootio.tools.media.ScheduleNotifiable;
@@ -34,6 +36,7 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
     private RadioRunner() {
         this.radioRunnerId = new Random().nextInt(1000);
         this.listenForScheduleChangeNotifications();
+        this.listenForTelephonyEvents();
     }
 
     public static RadioRunner getInstance() {
@@ -53,6 +56,27 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
             }
         };
         MessageRouter.getInstance().register(this.scheduleChangeNotificationReceiver, "org.rootio.services.synchronization.SCHEDULE_CHANGE_EVENT");
+    }
+
+    private void listenForTelephonyEvents()
+    {
+        this.telephonyEventBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Message m) {
+                String event = (String)m.getPayLoad().get("eventType");
+                switch (event)
+                {
+                    case "RINGING":
+                    case "INCALL":
+                        pauseProgram();
+                        break;
+                    case "IDLE":
+                        resumeProgram();
+                        break;
+                }
+            }
+        };
+        MessageRouter.getInstance().register(this.telephonyEventBroadcastReceiver, "org.rootio.services.sip.TELEPHONY");
     }
 
     @Override
@@ -81,11 +105,10 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
         this.runningProgramIndex = index;
         // Check to see that we are not in a phone call before launching program
 
-        //if (!RootioApp.isInCall() && !RootioApp.isInSIPCall()){ //this.state != State.PAUSED) {
+        if (!Rootio.isInCall() && !Rootio.isInSIPCall()){
         this.state = State.PLAYING;
         this.programs.get(index).run();
-        //Utils.toastOnScreen("starting program...", this.parent);
-        //}
+        }
     }
 
     /**
