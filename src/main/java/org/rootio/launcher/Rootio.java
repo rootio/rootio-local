@@ -1,10 +1,7 @@
 package org.rootio.launcher;
 
 import org.rootio.configuration.Configuration;
-import org.rootio.services.DiagnosticsService;
-import org.rootio.services.MediaIndexingService;
-import org.rootio.services.RadioService;
-import org.rootio.services.SynchronizationService;
+import org.rootio.services.*;
 
 import java.io.FileNotFoundException;
 
@@ -12,9 +9,11 @@ public class Rootio {
     private static DiagnosticsService diagnosticsService;
     private static SynchronizationService synchronizationService;
     private static MediaIndexingService mediaIndexingService;
+    private static SIPService sipService;
     private static RadioService radioService;
-    private static Thread diagnosticsThread, synchronizationThread, mediaIndexingThread, radioServiceThread;
+    private static Thread diagnosticsThread, synchronizationThread, mediaIndexingThread, radioServiceThread, sipServiceThread;
     private static boolean isRunning = true;
+    private static boolean inCall, inSIPCall;
 
     public static void main(String[] args) {
         try {
@@ -30,6 +29,7 @@ public class Rootio {
                 synchronizationThread.interrupt();
                 mediaIndexingThread.interrupt();
                 radioServiceThread.interrupt();
+                sipServiceThread.interrupt();
             }
         }
     }
@@ -51,15 +51,18 @@ public class Rootio {
         mediaIndexingThread = new Thread(() -> mediaIndexingService.start());
         mediaIndexingThread.start();
 
-        radioService= new RadioService();
+        radioService = new RadioService();
         radioServiceThread = new Thread(() -> radioService.start());
         radioServiceThread.start();
- }
 
-    public static boolean isRunning()
-    {
+        sipService = new SIPService();
+        sipServiceThread = new Thread(() -> sipService.start());
+        sipServiceThread.start();
+    }
+
+    public static boolean isRunning() {
         return isRunning;
- }
+    }
 
     private static void registerShutDownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(Rootio::run));
@@ -70,5 +73,21 @@ public class Rootio {
         //kill all the other threads
         isRunning = false;
         Thread.currentThread().notifyAll();
+    }
+
+    public static void setInCall(boolean isInCall) {
+        inCall = isInCall;
+    }
+
+    public static void setInSIPCall(boolean isInSIPCall) {
+        inSIPCall = isInSIPCall;
+    }
+
+    public static boolean isInCall() {
+        return inCall;
+    }
+
+    public static boolean isInSIPCall() {
+        return inSIPCall;
     }
 }
