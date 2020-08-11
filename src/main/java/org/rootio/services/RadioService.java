@@ -43,7 +43,6 @@ public class RadioService implements RootioService, ServiceInformationPublisher 
         radioRunner = RadioRunner.getInstance();
         this.scheduleNextDayAlarm();
         radioRunner.run();
-
     }
 
 
