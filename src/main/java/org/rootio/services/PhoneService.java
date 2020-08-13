@@ -4,11 +4,16 @@ import gnu.io.NoSuchPortException;
 import gnu.io.UnsupportedCommOperationException;
 import org.rootio.configuration.Configuration;
 import org.rootio.launcher.Rootio;
+import org.rootio.messaging.BroadcastReceiver;
+import org.rootio.messaging.Message;
+import org.rootio.messaging.MessageRouter;
+import org.rootio.services.SIP.CallState;
 import org.rootio.services.phone.ModemAgent;
 import org.rootio.tools.utils.EventAction;
 import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,10 +22,10 @@ public class PhoneService implements RootioService {
     private ModemAgent agent;
     private int serviceId;
     private Thread runnerThread;
+    private BroadcastReceiver br;
 
-    PhoneService()
-    {
-        agent = new ModemAgent(Configuration.getProperty("modem_port","COM13"));
+    public PhoneService() {
+        agent = new ModemAgent(Configuration.getProperty("modem_port", "COM13"));
     }
 
     @Override
@@ -34,6 +39,8 @@ public class PhoneService implements RootioService {
             }
         });
         runnerThread.start();
+        registerForTelephonyEvents();
+
         new ServiceState(7, "Telephone", 1).save();
         while (Rootio.isRunning()) {
             try {
@@ -54,5 +61,49 @@ public class PhoneService implements RootioService {
     @Override
     public boolean isRunning() {
         return false;
+    }
+
+    private void registerForTelephonyEvents() {
+        this.br = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Message m) {
+                String event = m.getEvent();
+                switch (event) {
+                    case "ring":
+                        String phoneNumber = (String) m.getPayLoad().get("b_party");
+                        if (isAllowed(phoneNumber)) {
+                            //announce the ring
+                            announceCallStatus(CallState.RINGING);
+                            //sleep for 5 secs while Program fades out
+                            try {
+                                Thread.sleep(5000);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            //answer the call
+                            MessageRouter.getInstance().specicast(new Message("answer", "call", new HashMap<>()), "org.rootio.services.phone.MODEM");
+                        }
+                    case "answer":
+                        announceCallStatus(CallState.INCALL);
+                        break;
+                    case "hangup":
+                        announceCallStatus(CallState.IDLE);
+                        break;
+                }
+            }
+        };
+        MessageRouter.getInstance().register(this.br, "org.rootio.telephony.CALL");
+    }
+
+    private void announceCallStatus(CallState callState) {
+        String filter = "org.rootio.services.phone.TELEPHONY";
+        HashMap<String, Object> payLoad = new HashMap<>();
+        payLoad.put("eventType", callState.name());
+        Message message = new Message(callState.name(), "telephony", payLoad);
+        MessageRouter.getInstance().specicast(message, filter);
+    }
+
+    private boolean isAllowed(String number) {
+        return true;
     }
 }
