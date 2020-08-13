@@ -63,7 +63,7 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
         this.telephonyEventBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Message m) {
-                String event = (String)m.getPayLoad().get("eventType");
+                String event = m.getEvent();
                 switch (event)
                 {
                     case "RINGING":
@@ -77,6 +77,7 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
             }
         };
         MessageRouter.getInstance().register(this.telephonyEventBroadcastReceiver, "org.rootio.services.sip.TELEPHONY");
+        MessageRouter.getInstance().register(this.telephonyEventBroadcastReceiver, "org.rootio.services.phone.TELEPHONY");
     }
 
     @Override
