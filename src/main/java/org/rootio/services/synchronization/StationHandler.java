@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import org.rootio.configuration.Configuration;
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Jude Mukundane, M-ITI/IST-UL
@@ -25,19 +26,17 @@ public class StationHandler implements SynchronizationHandler {
      * @param synchronizationResponse The response returned from the cloud server
      */
     public void processJSONResponse(JSONObject synchronizationResponse) {
-        var ref = new Object() {
-            boolean isConfigChanged = false;
-        };
+        AtomicBoolean isConfigChanged = new AtomicBoolean(false);
         Iterator<String> iter = synchronizationResponse.keys();
         iter.forEachRemaining(entry -> {
             try {
-                ref.isConfigChanged = ref.isConfigChanged || Configuration.setProperty(entry, synchronizationResponse.getString(iter.next()));
+                isConfigChanged.set(isConfigChanged.get() || Configuration.setProperty(entry, synchronizationResponse.getString(iter.next())));
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         });
 
-        if(ref.isConfigChanged)
+        if(isConfigChanged.get())
         {
             this.announceSIPChange();
         }
