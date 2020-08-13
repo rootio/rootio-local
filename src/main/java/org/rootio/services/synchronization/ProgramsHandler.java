@@ -1,6 +1,5 @@
 package org.rootio.services.synchronization;
 
-import jdk.jshell.spi.ExecutionControl;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -67,13 +66,13 @@ public class ProgramsHandler implements SynchronizationHandler {
             }
             // we had a full page, maybe more records..
             this.requestSync(results.length() == this.records);
-        } catch (ExecutionControl.NotImplementedException | JSONException e) {
+        } catch (JSONException e) {
             Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[ProgramHandler.processJSONObject]" : e.getMessage());
         }
     }
 
-    private void requestSync(boolean isStarting) throws ExecutionControl.NotImplementedException {
-        throw new ExecutionControl.NotImplementedException("Not yet implemented");
+    private void requestSync(boolean isStarting)  {
+        //throw new Exception("Not yet implemented");
 //        Intent intent = new Intent();
 //        intent.setAction("org.rootio.services.synchronization.SYNC_REQUEST");
 //        intent.putExtra("category", 2);
