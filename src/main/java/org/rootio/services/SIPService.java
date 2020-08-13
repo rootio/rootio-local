@@ -152,7 +152,7 @@ public class SIPService implements RootioService {
         String filter = "org.rootio.services.sip.TELEPHONY";
         HashMap<String, Object> payLoad = new HashMap<>();
         payLoad.put("eventType", callState.name());
-        Message message = new Message("ringing", "telephony", payLoad);
+        Message message = new Message(callState.name(), "telephony", payLoad);
         MessageRouter.getInstance().specicast(message, filter);
     }
 }
