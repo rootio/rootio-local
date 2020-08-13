@@ -1,10 +1,15 @@
 package org.rootio.tools.diagnostics;
 
+import org.rootio.messaging.BroadcastReceiver;
+import org.rootio.messaging.Message;
+import org.rootio.messaging.MessageRouter;
 import oshi.SystemInfo;
 
 import java.io.File;
 import java.net.SocketException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -21,38 +26,24 @@ public class DiagnosticAgent {
     private double longitude;
     private double storageStatus;
     private String telecomOperatorName, mobileNetworkType;
+    private BroadcastReceiver br;
 
 
     public DiagnosticAgent() {
         this.sysInfo = new SystemInfo();
-          }
+        this.listenForNetworkInformation();
+    }
 
     /**
      * Runs the checks for the various defined diagnostics
      */
     public void runDiagnostics() {
-        this.loadSignalStrength();
-        this.loadIsConnectedToMobileNetwork();
         this.loadIsConnectedToWifi();
         this.loadBatteryLevel();
         this.loadMemoryStatus();
         this.loadStorageUtilization();
         this.loadCPUutilization();
-        this.loadLatitudeLongitude();
-        this.loadTelecomOperatorName();
-        this.loadMobileNetworkType();
-     }
-
-    private void loadMobileNetworkType() {
-        this.mobileNetworkType = "";
-    }
-
-    /**
-     * Loads the name of the telecom operator to which the phone is currently
-     * latched
-     */
-    private void loadTelecomOperatorName() {
-        this.telecomOperatorName = null;
+        this.loadPhoneNetworkProperties();
     }
 
     /**
@@ -76,49 +67,26 @@ public class DiagnosticAgent {
     private void loadBatteryLevel() {
         batteryLevel = 0;
         Arrays.stream(sysInfo.getHardware().getPowerSources()).forEach(powerSource -> {
-            if(powerSource.getName().toLowerCase().contains("battery"))
-            {
-                batteryLevel = 100f * (float)powerSource.getRemainingCapacity();
+            if (powerSource.getName().toLowerCase().contains("battery")) {
+                batteryLevel = 100f * (float) powerSource.getRemainingCapacity();
             }
         });
     }
 
     /**
-     * Loads the mobile data connectivity status
-     */
-    private void loadIsConnectedToMobileNetwork() {
-        this.isConnectedToMobileNetwork = false;
-    }
-
-
-
-    //TODO: actually read documentation for below method
-    private void loadSignalStrength() {
-        mobileSignalStrength = 0;
-    }
-
-    /**
      * Loads the percentage memory utilization of the phone
      */
-    private void loadMemoryStatus()
-    {
-        memoryStatus = 100f * (1f -  (float)sysInfo.getHardware().getMemory().getAvailable()/(float)sysInfo.getHardware().getMemory().getTotal());
+    private void loadMemoryStatus() {
+        memoryStatus = 100f * (1f - (float) sysInfo.getHardware().getMemory().getAvailable() / (float) sysInfo.getHardware().getMemory().getTotal());
     }
 
     /**
      * Loads the percentage CPU Utilization of the phone
      */
     private void loadCPUutilization() {
-        this.CPUUtilization = 100f * (float)sysInfo.getHardware().getProcessor().getSystemCpuLoad();
+        this.CPUUtilization = 100f * (float) sysInfo.getHardware().getProcessor().getSystemCpuLoad();
     }
 
-    /**
-     * Loads the GPS coordinates of the phone
-     */
-    private void loadLatitudeLongitude() {
-            this.latitude = 0;
-            this.longitude = 0;
-        }
 
     /**
      * Loads the percentage Utilization of the phone storage
@@ -130,7 +98,122 @@ public class DiagnosticAgent {
             free.addAndGet(l.getFreeSpace());
             total.addAndGet(l.getTotalSpace());
         });
-       this.storageStatus = 100 * (1f - (float)free.get()/(float)total.get());
+        this.storageStatus = 100 * (1f - (float) free.get() / (float) total.get());
+    }
+
+    private void loadPhoneNetworkProperties() {
+        MessageRouter.getInstance().specicast(new Message("name", "network", new HashMap<>()), "org.rootio.phone.MODEM");
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        MessageRouter.getInstance().specicast(new Message("type", "network", new HashMap<>()), "org.rootio.phone.MODEM");
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        MessageRouter.getInstance().specicast(new Message("strength", "network", new HashMap<>()), "org.rootio.phone.MODEM");
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        MessageRouter.getInstance().specicast(new Message("read", "gps", new HashMap<>()), "org.rootio.phone.MODEM");
+    }
+
+    private void listenForNetworkInformation() {
+        br = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Message m) {
+                if (m.getCategory().equals("gps")) {
+                    DiagnosticAgent.this.latitude = ddmmToDec((String)m.getPayLoad().get("latitude"),(String)m.getPayLoad().get("latitude_direction"));
+                    DiagnosticAgent.this.longitude = ddmmToDec((String)m.getPayLoad().get("longitude"),(String)m.getPayLoad().get("longitude_direction"));
+                } else if (m.getCategory().equals("network")) {
+                    switch (m.getEvent()) {
+                        case "type":
+                            switch ((String) m.getPayLoad().get("network_type")) {
+                                case "0":
+                                    mobileNetworkType = "no service";
+                                    break;
+                                case "1":
+                                    mobileNetworkType = "GSM";
+                                    break;
+                                case "2":
+                                    mobileNetworkType = "GPRS";
+                                    break;
+                                case "3":
+                                    mobileNetworkType = "EGPRS (EDGE)";
+                                    break;
+                                case "4":
+                                    mobileNetworkType = "WCDMA";
+                                    break;
+                                case "5":
+                                    mobileNetworkType = "HSDPA only(WCDMA)";
+                                    break;
+                                case "6":
+                                    mobileNetworkType = "HSUPA only(WCDMA)";
+                                    break;
+                                case "7":
+                                    mobileNetworkType = "HSPA (HSDPA and HSUPA, WCDMA)";
+                                    break;
+                                case "8":
+                                    mobileNetworkType = "LTE";
+                                    break;
+                                case "9":
+                                    mobileNetworkType = "TDS-CDMA";
+                                    break;
+                                case "10":
+                                    mobileNetworkType = "TDS-HSDPA only";
+                                    break;
+                                case "11":
+                                    mobileNetworkType = "TDS- HSUPA only";
+                                    break;
+                                case "12":
+                                    mobileNetworkType = "TDS- HSPA (HSDPA and HSUPA)";
+                                    break;
+                                case "13":
+                                    mobileNetworkType = "CDMA";
+                                    break;
+                                case "14":
+                                    mobileNetworkType = "EVDO";
+                                    break;
+                                case "15":
+                                    mobileNetworkType = "HYBRID (CDMA and EVDO)";
+                                    break;
+                                case "16":
+                                    mobileNetworkType = "1XLTE(CDMA and LTE)";
+                                    break;
+                            }
+                            break;
+                        case "strength":
+                            String signal = (String) m.getPayLoad().get("network_strength");
+                            DiagnosticAgent.this.mobileSignalStrength = (Integer.parseInt(signal));
+                            break;
+                        case "name":
+                            DiagnosticAgent.this.telecomOperatorName = (String) m.getPayLoad().get("network_name");
+                            break;
+                    }
+                }
+            }
+        };
+        MessageRouter.getInstance().register(br, "org.rootio.telephony.NETWORK");
+        MessageRouter.getInstance().register(br, "org.rootio.telephony.GPS");
+
+    }
+
+    private float ddmmToDec(String ddmmLocation, String direction) {
+        try {
+            float degrees = Float.parseFloat(ddmmLocation.substring(0, ddmmLocation.indexOf(".") - 2));
+            float minutes = Float.parseFloat(ddmmLocation.substring(ddmmLocation.indexOf(".") - 2));
+            degrees += minutes / 60F;
+            return Arrays.asList("s", "S", "W", "w").contains(direction) ? -degrees : degrees;
+        }
+        catch(NumberFormatException e)
+        {
+            return 0f;
+        }
     }
 
     /**
@@ -223,12 +306,13 @@ public class DiagnosticAgent {
      * @return Longitude of the phone
      */
 
-    public double  getLongitude()
-    {
+    public double getLongitude() {
         return this.longitude;
     }
 
-    public String getMobileNetworkType(){
+    public String getMobileNetworkType() {
         return this.mobileNetworkType;
     }
+
+
 }
