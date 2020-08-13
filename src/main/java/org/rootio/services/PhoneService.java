@@ -13,7 +13,9 @@ import org.rootio.tools.utils.EventAction;
 import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,6 +25,7 @@ public class PhoneService implements RootioService {
     private int serviceId;
     private Thread runnerThread;
     private BroadcastReceiver br;
+    private Process proc;
 
     public PhoneService() {
         agent = new ModemAgent(Configuration.getProperty("modem_port", "COM13"));
@@ -85,9 +88,11 @@ public class PhoneService implements RootioService {
                         }
                     case "answer":
                         announceCallStatus(CallState.INCALL);
+                        playCall();
                         break;
                     case "hangup":
                         announceCallStatus(CallState.IDLE);
+                        stopPlayCall();
                         break;
                 }
             }
@@ -103,7 +108,38 @@ public class PhoneService implements RootioService {
         MessageRouter.getInstance().specicast(message, filter);
     }
 
-    private boolean isAllowed(String number) {
-        return true;
+    private void playCall() {
+        try {
+            proc = Runtime.getRuntime().exec(String.format("%s -r 16000 -c 1 -t %s %s -b 16 -t %s %s",
+                    Configuration.getProperty("sox_path","/usr/bin/sox"),
+            Configuration.getProperty("audio_driver","alsa"), Configuration.getProperty("audio_input_device"),
+                    Configuration.getProperty("audio_driver","alsa"), Configuration.getProperty("audio_output_device")));
+        } catch (IOException e) {
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[PhoneService.playCall]" : e.getMessage());
+            //maybe hangup?
+        }
     }
-}
+
+    private void stopPlayCall() {
+        String OS = System.getProperty("os.name", "generic").toLowerCase(Locale.ENGLISH);
+        if (OS.indexOf("win") >= 0) {
+            try {
+                Runtime.getRuntime().exec("taskkill /F /IM sox.exe");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else //hopefully nix variant
+        {
+            try {
+                Runtime.getRuntime().exec("killall -9 sox");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+        private boolean isAllowed (String number){
+            return true;
+        }
+    }
