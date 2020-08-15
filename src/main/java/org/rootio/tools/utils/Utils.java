@@ -11,6 +11,8 @@ import java.net.URL;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class Utils {
@@ -43,30 +45,6 @@ public class Utils {
         }
     }
 
-    public static int parseIntFromString(String input) {
-        try {
-            return Integer.parseInt(input);
-        } catch (Exception ex) {
-            return 0;
-        }
-    }
-
-    public static long parseLongFromString(String input) {
-        try {
-            return Long.parseLong(input);
-        } catch (Exception ex) {
-            return 0;
-        }
-    }
-
-    public static double parseDoubleFromString(String input) {
-        try {
-            return Double.parseDouble(input);
-        } catch (Exception ex) {
-            return 0;
-        }
-    }
-
     public static String doPostHTTP(String httpUrl, String data) {
         URL url;
         try {
@@ -77,7 +55,6 @@ public class Utils {
             httpUrlConnection.setRequestProperty("Content-Type", "application/json");
             httpUrlConnection.connect();
             OutputStream outstr = httpUrlConnection.getOutputStream();
-            //writeToFile(data);
             outstr.write(data.getBytes());
             outstr.flush();
             InputStream instr = httpUrlConnection.getInputStream();
@@ -91,7 +68,7 @@ public class Utils {
             }
             return response.toString();
         } catch (IOException e) {
-            e.printStackTrace();
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Utils.doPostHTTP]" : e.getMessage());
             return null;
         }
     }
@@ -108,7 +85,6 @@ public class Utils {
             httpUrlConnection.setRequestProperty("Content-Type", "application/json");
             httpUrlConnection.connect();
             OutputStream outstr = httpUrlConnection.getOutputStream();
-            //writeToFile(data);
             outstr.write(data.getBytes());
             outstr.flush();
             InputStream instr = httpUrlConnection.getInputStream();
@@ -127,7 +103,7 @@ public class Utils {
             responseData.put("url", httpUrlConnection.getURL());
             return responseData;
         } catch (IOException e) {
-            e.printStackTrace();
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Utils.doDetailedPostHTTP]" : e.getMessage());
             return null;
         }
     }
