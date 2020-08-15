@@ -8,10 +8,10 @@ import oshi.SystemInfo;
 import java.io.File;
 import java.net.SocketException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DiagnosticAgent {
 
@@ -127,76 +127,83 @@ public class DiagnosticAgent {
         br = new BroadcastReceiver() {
             @Override
             public void onReceive(Message m) {
-                if (m.getCategory().equals("gps")) {
-                    DiagnosticAgent.this.latitude = ddmmToDec((String)m.getPayLoad().get("latitude"),(String)m.getPayLoad().get("latitude_direction"));
-                    DiagnosticAgent.this.longitude = ddmmToDec((String)m.getPayLoad().get("longitude"),(String)m.getPayLoad().get("longitude_direction"));
-                } else if (m.getCategory().equals("network")) {
-                    switch (m.getEvent()) {
-                        case "type":
-                            switch ((String) m.getPayLoad().get("network_type")) {
-                                case "0":
-                                    mobileNetworkType = "no service";
-                                    break;
-                                case "1":
-                                    mobileNetworkType = "GSM";
-                                    break;
-                                case "2":
-                                    mobileNetworkType = "GPRS";
-                                    break;
-                                case "3":
-                                    mobileNetworkType = "EGPRS (EDGE)";
-                                    break;
-                                case "4":
-                                    mobileNetworkType = "WCDMA";
-                                    break;
-                                case "5":
-                                    mobileNetworkType = "HSDPA only(WCDMA)";
-                                    break;
-                                case "6":
-                                    mobileNetworkType = "HSUPA only(WCDMA)";
-                                    break;
-                                case "7":
-                                    mobileNetworkType = "HSPA (HSDPA and HSUPA, WCDMA)";
-                                    break;
-                                case "8":
-                                    mobileNetworkType = "LTE";
-                                    break;
-                                case "9":
-                                    mobileNetworkType = "TDS-CDMA";
-                                    break;
-                                case "10":
-                                    mobileNetworkType = "TDS-HSDPA only";
-                                    break;
-                                case "11":
-                                    mobileNetworkType = "TDS- HSUPA only";
-                                    break;
-                                case "12":
-                                    mobileNetworkType = "TDS- HSPA (HSDPA and HSUPA)";
-                                    break;
-                                case "13":
-                                    mobileNetworkType = "CDMA";
-                                    break;
-                                case "14":
-                                    mobileNetworkType = "EVDO";
-                                    break;
-                                case "15":
-                                    mobileNetworkType = "HYBRID (CDMA and EVDO)";
-                                    break;
-                                case "16":
-                                    mobileNetworkType = "1XLTE(CDMA and LTE)";
-                                    break;
-                            }
-                            break;
-                        case "strength":
-                            String signal = (String) m.getPayLoad().get("network_strength");
-                            DiagnosticAgent.this.mobileSignalStrength = (Integer.parseInt(signal));
-                            break;
-                        case "name":
-                            DiagnosticAgent.this.telecomOperatorName = (String) m.getPayLoad().get("network_name");
-                            break;
+                try {
+                    if (m.getCategory().equals("gps")) {
+                        DiagnosticAgent.this.latitude = ddmmToDec((String) m.getPayLoad().get("latitude"), (String) m.getPayLoad().get("latitude_direction"));
+                        DiagnosticAgent.this.longitude = ddmmToDec((String) m.getPayLoad().get("longitude"), (String) m.getPayLoad().get("longitude_direction"));
+                    } else if (m.getCategory().equals("network")) {
+                        switch (m.getEvent()) {
+                            case "type":
+                                switch ((String) m.getPayLoad().get("network_type")) {
+                                    case "0":
+                                        mobileNetworkType = "no service";
+                                        break;
+                                    case "1":
+                                        mobileNetworkType = "GSM";
+                                        break;
+                                    case "2":
+                                        mobileNetworkType = "GPRS";
+                                        break;
+                                    case "3":
+                                        mobileNetworkType = "EGPRS (EDGE)";
+                                        break;
+                                    case "4":
+                                        mobileNetworkType = "WCDMA";
+                                        break;
+                                    case "5":
+                                        mobileNetworkType = "HSDPA only(WCDMA)";
+                                        break;
+                                    case "6":
+                                        mobileNetworkType = "HSUPA only(WCDMA)";
+                                        break;
+                                    case "7":
+                                        mobileNetworkType = "HSPA (HSDPA and HSUPA, WCDMA)";
+                                        break;
+                                    case "8":
+                                        mobileNetworkType = "LTE";
+                                        break;
+                                    case "9":
+                                        mobileNetworkType = "TDS-CDMA";
+                                        break;
+                                    case "10":
+                                        mobileNetworkType = "TDS-HSDPA only";
+                                        break;
+                                    case "11":
+                                        mobileNetworkType = "TDS- HSUPA only";
+                                        break;
+                                    case "12":
+                                        mobileNetworkType = "TDS- HSPA (HSDPA and HSUPA)";
+                                        break;
+                                    case "13":
+                                        mobileNetworkType = "CDMA";
+                                        break;
+                                    case "14":
+                                        mobileNetworkType = "EVDO";
+                                        break;
+                                    case "15":
+                                        mobileNetworkType = "HYBRID (CDMA and EVDO)";
+                                        break;
+                                    case "16":
+                                        mobileNetworkType = "1XLTE(CDMA and LTE)";
+                                        break;
+                                }
+                                break;
+                            case "strength":
+                                String signal = (String) m.getPayLoad().get("network_strength");
+                                DiagnosticAgent.this.mobileSignalStrength = (Integer.parseInt(signal));
+                                break;
+                            case "name":
+                                DiagnosticAgent.this.telecomOperatorName = (String) m.getPayLoad().get("network_name");
+                                break;
+                        }
                     }
                 }
+                catch(Exception e)
+                {
+                    Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[DiagnosticsRunner.run]" : e.getMessage());
+                }
             }
+
         };
         MessageRouter.getInstance().register(br, "org.rootio.telephony.NETWORK");
         MessageRouter.getInstance().register(br, "org.rootio.telephony.GPS");
@@ -210,7 +217,7 @@ public class DiagnosticAgent {
             degrees += minutes / 60F;
             return Arrays.asList("s", "S", "W", "w").contains(direction) ? -degrees : degrees;
         }
-        catch(NumberFormatException e)
+        catch(Exception e)
         {
             return 0f;
         }
