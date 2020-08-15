@@ -11,7 +11,8 @@ public class Rootio {
     private static MediaIndexingService mediaIndexingService;
     private static SIPService sipService;
     private static RadioService radioService;
-    private static Thread diagnosticsThread, synchronizationThread, mediaIndexingThread, radioServiceThread, sipServiceThread;
+    private static PhoneService phoneService;
+    private static Thread diagnosticsThread, synchronizationThread, mediaIndexingThread, radioServiceThread, sipServiceThread, phoneServiceThread;
     private static boolean isRunning = true;
     private static boolean inCall, inSIPCall;
 
@@ -39,6 +40,10 @@ public class Rootio {
     }
 
     private static void runServices() {
+        phoneService = new PhoneService();
+        phoneServiceThread = new Thread(() -> phoneService.start());
+        phoneServiceThread.start();
+
         diagnosticsService = new DiagnosticsService();
         diagnosticsThread = new Thread(() -> diagnosticsService.start());
         diagnosticsThread.start();
