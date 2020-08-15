@@ -28,7 +28,7 @@ public class PhoneService implements RootioService {
     private Process proc;
 
     public PhoneService() {
-        agent = new ModemAgent(Configuration.getProperty("modem_port", "COM13"));
+        agent = new ModemAgent(Configuration.getProperty("modem_port", "/dev/ttyUSB3"));
     }
 
     @Override
@@ -37,7 +37,7 @@ public class PhoneService implements RootioService {
         runnerThread = new Thread(() -> {
             try {
                 agent.start();
-            } catch (UnsupportedCommOperationException | NoSuchPortException e) {
+            } catch (Exception e) {
                 Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[PhoneService.start]" : e.getMessage());
             }
         });
@@ -97,6 +97,7 @@ public class PhoneService implements RootioService {
                 }
             }
         };
+
         MessageRouter.getInstance().register(this.br, "org.rootio.telephony.CALL");
     }
 
@@ -110,7 +111,7 @@ public class PhoneService implements RootioService {
 
     private void playCall() {
         try {
-            proc = Runtime.getRuntime().exec(String.format("%s -r 16000 -c 1 -t %s %s -b 16 -t %s %s",
+            proc = Runtime.getRuntime().exec(String.format("%s -r 8000 -c 1 -t %s %s -b 16 -t %s %s",
                     Configuration.getProperty("sox_path","/usr/bin/sox"),
             Configuration.getProperty("audio_driver","alsa"), Configuration.getProperty("audio_input_device"),
                     Configuration.getProperty("audio_driver","alsa"), Configuration.getProperty("audio_output_device")));
