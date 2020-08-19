@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="com.googlecode.soundlibs:vorbisspi:1.0.3.3" type="repository">
+    <properties maven-id="com.googlecode.soundlibs:vorbisspi:1.0.3.3" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/googlecode/soundlibs/vorbisspi/1.0.3.3/vorbisspi-1.0.3.3.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/googlecode/soundlibs/jorbis/0.0.17.4/jorbis-0.0.17.4.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/googlecode/soundlibs/tritonus-share/0.3.7.4/tritonus-share-0.3.7.4.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

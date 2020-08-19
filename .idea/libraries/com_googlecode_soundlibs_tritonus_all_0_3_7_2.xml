@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="com.googlecode.soundlibs:tritonus-all:0.3.7.2" type="repository">
+    <properties maven-id="com.googlecode.soundlibs:tritonus-all:0.3.7.2" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/googlecode/soundlibs/tritonus-all/0.3.7.2/tritonus-all-0.3.7.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/googlecode/soundlibs/jorbis/0.0.17-2/jorbis-0.0.17-2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
