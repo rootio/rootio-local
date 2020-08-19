@@ -1,7 +1,5 @@
 package org.rootio.tools.media;
 
-import javafx.scene.media.MediaPlayer;
-import javafx.util.Duration;
 import org.rootio.configuration.Configuration;
 import org.rootio.tools.persistence.DBAgent;
 import org.rootio.tools.utils.EventAction;
@@ -9,7 +7,6 @@ import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Level;
@@ -31,7 +28,6 @@ public class PlayList {
     private CallSignProvider callSignProvider;
     private String currentMediaUri;
     private Media currentMedia, currentCallSign;
-    private Duration mediaPosition;
     private MediaLibrary mediaLib;
     private boolean isShuttingDown;
     private Thread runnerThread;
@@ -84,7 +80,6 @@ public class PlayList {
     public void play() {
         this.maxVolume = this.getMaxVolume();
         new Thread(this::startPlayer).start();
-        //  startPlayer();
         this.callSignProvider.start();
 
     }
@@ -114,7 +109,7 @@ public class PlayList {
                         this.foundMedia = true;
                         new Thread(() -> Utils.doPostHTTP(String.format("%s://%s:%s/%s/%s/programs?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/media_play", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version")), "")).start();
 
-                    } catch ( NullPointerException ex) {
+                    } catch (NullPointerException ex) {
                         //Log.e(this.parent.getString(R.string.app_name) + " PlayList.startPlayer", ex.getMessage() == null ? "Null pointer exception(PlayList.startPlayer)" : ex.getMessage());
                         this.startPlayer();
                     }
@@ -138,32 +133,21 @@ public class PlayList {
         }
     }
 
-    private void playMedia(String uri) {
-        this.playMedia(uri, new Duration(0));
-    }
 
-    private void playMedia(String uri, Duration seekPosition) {
+    private void playMedia(String uri) {
         this.currentMediaUri = uri;
-        //
-        com.sun.javafx.application.PlatformImpl.startup(()->{});
 
         //begin by raising the volume
-        javafx.scene.media.Media media = new javafx.scene.media.Media(new File(uri).toURI().toString());
-        mediaPlayer = new MediaPlayer(media);
-        mediaPlayer.setOnEndOfMedia(() -> {
+        mediaPlayer = new MediaPlayer(uri);
+        mediaPlayer.setOnEnd(() -> {
             this.foundMedia = false;
             //Utils.toastOnScreen("logging media...", this.parent);
             Utils.logEvent(EventCategory.MEDIA, EventAction.STOP, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
             if (this.isShuttingDown) {
                 return;
             }
-            try {
-                mediaPlayer.dispose();
-            } catch (Exception e) {
-                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.playMedia]" : e.getMessage());
-            }
             //this.load();
-            this.startPlayer();
+            //this.startPlayer();
         });
         mediaPlayer.setOnError(() -> {
             this.foundMedia = false;
@@ -172,20 +156,15 @@ public class PlayList {
             if (this.isShuttingDown) {
                 return;
             }
-            try {
-                mediaPlayer.dispose();
-            } catch (Exception e) {
-                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.playMedia]" : e.getMessage());
-            }
             //this.load();
-            this.startPlayer();
+            //this.startPlayer();
         });
         mediaPlayer.setOnReady(() -> {
             try {
                 if (this.callSignPlayer != null && this.callSignPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
                     this.mediaPlayer.setVolume(0.07f);
                 } else {
-                    this.mediaPlayer.setVolume(getMaxVolume());
+                    this.mediaPlayer.setVolume(getMaxVolume()); //settings were originally 0 -> 1 for android
                 }
                 //Utils.toastOnScreen("logging media...", this.parent);
                 Utils.logEvent(EventCategory.MEDIA, EventAction.START, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
@@ -194,7 +173,7 @@ public class PlayList {
             }
         });
 
-        mediaPlayer.setVolume(getMaxVolume());
+        //mediaPlayer.setVolume(getMaxVolume());
         mediaPlayer.play();
     }
 
@@ -231,7 +210,7 @@ public class PlayList {
 
     private void fadeOut() {
         //fade out in 5 secs
-        double step = mediaPlayer.getVolume() / 50;
+        float step = mediaPlayer.getVolume() / 50f;
         while (mediaPlayer.getVolume() > 0) {
             //volume = volume - 0.05F;
             mediaPlayer.setVolume(mediaPlayer.getVolume() - step);
@@ -257,9 +236,7 @@ public class PlayList {
 
                 Utils.logEvent(EventCategory.MEDIA, EventAction.PAUSE, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
                 try {
-                    this.mediaPosition = this.mediaPlayer.getCurrentTime();
                     mediaPlayer.stop(); //advised that media players should never be reused, even in pause/play scenarios
-                    mediaPlayer.dispose();
                 } catch (Exception e) {
                     Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.pause]" : e.getMessage());
                 }
@@ -267,7 +244,6 @@ public class PlayList {
                 try {
                     //stop the call sign player as well
                     this.callSignPlayer.stop(); //this thread is sleeping! TODO: interrupt it
-                    this.callSignPlayer.dispose();
                 } catch (Exception e) {
                     Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.pause]" : e.getMessage());
                 }
@@ -291,7 +267,7 @@ public class PlayList {
 
     public void resume() {
         try {
-            this.playMedia(this.currentMediaUri, this.mediaPosition);
+            this.playMedia(this.currentMediaUri);
             try {
 
                 Utils.logEvent(EventCategory.MEDIA, EventAction.START, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
@@ -355,8 +331,8 @@ public class PlayList {
     private void onReceiveCallSign(String url) {
         try {
 
-            callSignPlayer = new MediaPlayer(new javafx.scene.media.Media(new File(url).toURI().toString()));
-            callSignPlayer.setOnEndOfMedia(() -> {
+            callSignPlayer = new MediaPlayer(url);
+            callSignPlayer.setOnEnd(() -> {
                 try {
                     PlayList.this.mediaPlayer.setVolume(getMaxVolume());
                     try {
@@ -364,7 +340,6 @@ public class PlayList {
                     } catch (Exception e) {
                         Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.onReceiveCallSign]" : e.getMessage());
                     }
-                    callSignPlayer.dispose();
                 } catch (Exception e) {
                     Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.onReceiveCallSign]" : e.getMessage());
                 }
