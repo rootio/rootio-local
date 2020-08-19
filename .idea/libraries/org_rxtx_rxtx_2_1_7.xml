@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="org.rxtx:rxtx:2.1.7" type="repository">
+    <properties maven-id="org.rxtx:rxtx:2.1.7" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/rxtx/rxtx/2.1.7/rxtx-2.1.7.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
