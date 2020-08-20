@@ -26,12 +26,12 @@ public class SynchronizationService implements RootioService {
             this.isRunning = true;
             synchronizationThread.start();
         }
-        new ServiceState(5,"Synchronization", 1).save();
-        while(Rootio.isRunning()) {
+        new ServiceState(5, "Synchronization", 1).save();
+        while (Rootio.isRunning()) {
             try {
-                Thread.currentThread().wait();
+                synchronizationThread.join();
             } catch (InterruptedException e) {
-                if(!Rootio.isRunning()) {
+                if (!Rootio.isRunning()) {
                     synchronizationThread.interrupt();
                 }
             }
@@ -43,12 +43,10 @@ public class SynchronizationService implements RootioService {
         Utils.logEvent(EventCategory.SERVICES, EventAction.STOP, "Synchronization Service");
         try {
             this.shutDownService();
-        }
-        catch(Exception e)
-        {
+        } catch (Exception e) {
             Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[SynchronizationService.stop]" : e.getMessage());
         }
-        new ServiceState(5,"Synchronization", 0).save();
+        new ServiceState(5, "Synchronization", 0).save();
     }
 
     private void shutDownService() {

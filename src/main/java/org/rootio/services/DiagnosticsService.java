@@ -21,7 +21,6 @@ public class DiagnosticsService implements RootioService {
     private Thread runnerThread;
 
 
-
     public void start() {
         Utils.logEvent(EventCategory.SERVICES, EventAction.START, "Diagnostics Service");
         long delay = this.getDelay();
@@ -34,7 +33,7 @@ public class DiagnosticsService implements RootioService {
         new ServiceState(serviceId, "Diagnostic", 1).save();
         while (Rootio.isRunning()) {
             try {
-                Thread.currentThread().wait();
+                runnerThread.join();
             } catch (InterruptedException e) {
                 if (!Rootio.isRunning()) {
                     runnerThread.interrupt();

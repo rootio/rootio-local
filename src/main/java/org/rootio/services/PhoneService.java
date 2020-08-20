@@ -31,7 +31,7 @@ public class PhoneService implements RootioService {
 
     @Override
     public void start() {
-        Utils.logEvent(EventCategory.SERVICES, EventAction.START, "Radio Service");
+        Utils.logEvent(EventCategory.SERVICES, EventAction.START, "Telephone Service");
         runnerThread = new Thread(() -> {
             try {
                 agent.start();
@@ -45,7 +45,7 @@ public class PhoneService implements RootioService {
         new ServiceState(7, "Telephone", 1).save();
         while (Rootio.isRunning()) {
             try {
-                Thread.currentThread().wait();
+                runnerThread.join();
             } catch (InterruptedException e) {
                 if (!Rootio.isRunning()) {
                     agent.shutDown();
@@ -112,9 +112,9 @@ public class PhoneService implements RootioService {
     private void playCall() {
         try {
             proc = Runtime.getRuntime().exec(String.format("%s -r 8000 -c 1 -t %s %s -b 16 -t %s %s",
-                    Configuration.getProperty("sox_path","/usr/bin/sox"),
-            Configuration.getProperty("audio_driver","alsa"), Configuration.getProperty("audio_input_device"),
-                    Configuration.getProperty("audio_driver","alsa"), Configuration.getProperty("audio_output_device","-d")));
+                    Configuration.getProperty("sox_path", "/usr/bin/sox"),
+                    Configuration.getProperty("audio_driver", "alsa"), Configuration.getProperty("audio_input_device"),
+                    Configuration.getProperty("audio_driver", "alsa"), Configuration.getProperty("audio_output_device", "-d")));
         } catch (IOException e) {
             Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[PhoneService.playCall]" : e.getMessage());
             //maybe hangup?
@@ -141,7 +141,7 @@ public class PhoneService implements RootioService {
 
     }
 
-        private boolean isAllowed (String number){
-            return true;
-        }
+    private boolean isAllowed(String number) {
+        return true;
     }
+}

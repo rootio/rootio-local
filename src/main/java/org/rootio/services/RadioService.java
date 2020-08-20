@@ -30,7 +30,7 @@ public class RadioService implements RootioService, ServiceInformationPublisher 
         new ServiceState(4, "Radio", 1).save();
         while (Rootio.isRunning()) {
             try {
-                Thread.currentThread().wait();
+                runnerThread.join();
             } catch (InterruptedException e) {
                 if (!Rootio.isRunning()) {
                     runnerThread.interrupt();

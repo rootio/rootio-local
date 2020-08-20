@@ -41,7 +41,7 @@ public class SIPService implements RootioService {
         new ServiceState(serviceId, "SIPService", 1).save();
         while (Rootio.isRunning()) {
             try {
-                Thread.currentThread().wait();
+                runnerThread.join();
             } catch (InterruptedException e) {
                 if (!Rootio.isRunning()) {
                     try {
@@ -52,7 +52,6 @@ public class SIPService implements RootioService {
                 }
             }
         }
-
     }
 
     @Override
@@ -100,7 +99,7 @@ public class SIPService implements RootioService {
 
     private String readIncomingEvent(Socket con) {
         char[] buf = new char[1024]; //1KB
-        try  {
+        try {
             InputStreamReader instr = new InputStreamReader(con.getInputStream());
             instr.read(buf, 0, buf.length);
 

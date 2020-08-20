@@ -46,10 +46,11 @@ public class MediaIndexingService implements RootioService {
         new ServiceState(7,"Media Indexing", 1).save();
         while(Rootio.isRunning()) {
             try {
-                Thread.currentThread().wait();
+                    indexingThread.join();
             } catch (InterruptedException e) {
                 if(!Rootio.isRunning()) {
                     indexingThread.interrupt();
+                    System.out.print("interrupted...");
                 }
             }
         }

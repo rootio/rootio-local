@@ -18,7 +18,7 @@ public class Rootio {
 
     public static void main(String[] args) {
         try {
-            prepareConfig(args[0]);
+            prepareConfig("C:\\rootio\\rootio.conf");
             runServices();
             registerShutDownHook();
             Thread.currentThread().wait();
