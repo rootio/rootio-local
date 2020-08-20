@@ -1,7 +1,5 @@
 package org.rootio.services;
 
-import gnu.io.NoSuchPortException;
-import gnu.io.UnsupportedCommOperationException;
 import org.rootio.configuration.Configuration;
 import org.rootio.launcher.Rootio;
 import org.rootio.messaging.BroadcastReceiver;
@@ -73,6 +71,7 @@ public class PhoneService implements RootioService {
                 String event = m.getEvent();
                 switch (event) {
                     case "ring":
+                        Rootio.setInCall(true);
                         String phoneNumber = (String) m.getPayLoad().get("b_party");
                         if (isAllowed(phoneNumber)) {
                             //announce the ring
@@ -91,6 +90,7 @@ public class PhoneService implements RootioService {
                         playCall();
                         break;
                     case "hangup":
+                        Rootio.setInCall(false);
                         announceCallStatus(CallState.IDLE);
                         stopPlayCall();
                         break;
@@ -114,11 +114,12 @@ public class PhoneService implements RootioService {
             proc = Runtime.getRuntime().exec(String.format("%s -r 8000 -c 1 -t %s %s -b 16 -t %s %s",
                     Configuration.getProperty("sox_path","/usr/bin/sox"),
             Configuration.getProperty("audio_driver","alsa"), Configuration.getProperty("audio_input_device"),
-                    Configuration.getProperty("audio_driver","alsa"), Configuration.getProperty("audio_output_device")));
+                    Configuration.getProperty("audio_driver","alsa"), Configuration.getProperty("audio_output_device","-d")));
         } catch (IOException e) {
             Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[PhoneService.playCall]" : e.getMessage());
             //maybe hangup?
         }
+
     }
 
     private void stopPlayCall() {
@@ -136,8 +137,8 @@ public class PhoneService implements RootioService {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
         }
+
     }
 
         private boolean isAllowed (String number){
