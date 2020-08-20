@@ -40,7 +40,7 @@ public class MessageRouter {
     {
         if(registeredReceivers.containsKey(filter))
         {
-            registeredReceivers.get(filter).forEach(broadcastReceiver -> broadcastReceiver.onReceive(message));
+            registeredReceivers.get(filter).forEach(broadcastReceiver -> new Thread(()->broadcastReceiver.onReceive(message)).start());
         }
     }
 
