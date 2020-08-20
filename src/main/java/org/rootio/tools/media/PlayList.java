@@ -1,12 +1,12 @@
 package org.rootio.tools.media;
 
 import org.rootio.configuration.Configuration;
+import org.rootio.launcher.Rootio;
 import org.rootio.tools.persistence.DBAgent;
 import org.rootio.tools.utils.EventAction;
 import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
-import java.io.File;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Level;
@@ -66,52 +66,37 @@ public class PlayList {
         streamIterator = streams.iterator();
     }
 
-    public void preload() {
-        if (this.mediaList == null || mediaList.size() == 0) {
-            mediaList = loadMedia(this.playlists);
-        }
-        mediaIterator = mediaList.iterator();
-        streamIterator = streams.iterator();
-    }
-
     /**
      * Play the media loaded in this playlist
      */
     public void play() {
         this.maxVolume = this.getMaxVolume();
         new Thread(this::startPlayer).start();
-        this.callSignProvider.start();
-
+        new Thread(() -> this.callSignProvider.start()).start();
     }
 
     private void startPlayer() {
-        while (!foundMedia && !this.isShuttingDown) {
+        while ((mediaIterator.hasNext() || streamIterator.hasNext()) && !this.isShuttingDown && !Rootio.isInCall() && !Rootio.isInSIPCall()) {
             try {
                 if (streamIterator.hasNext()) {
                     String stream = this.streamIterator.next();
                     currentMedia = new Media("", stream, 0, null);
                     try {
                         playMedia(currentMedia.getFileLocation());
-                        this.foundMedia = true;
-
                         new Thread(() -> Utils.doPostHTTP(String.format("%s://%s:%s/%s/%s/programs?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/media_play", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version")), "")).start();
-                    } catch (NullPointerException e) {
+                    } catch (Exception e) {
+                        e.printStackTrace();
                         Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.startPLayer]" : e.getMessage());
-                        this.startPlayer();
                     }
 
                 } else if (mediaIterator.hasNext()) {
-
                     currentMedia = mediaIterator.next();
-
                     try {
                         playMedia(currentMedia.getFileLocation());
-                        this.foundMedia = true;
                         new Thread(() -> Utils.doPostHTTP(String.format("%s://%s:%s/%s/%s/programs?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/media_play", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version")), "")).start();
-
-                    } catch (NullPointerException ex) {
-                        //Log.e(this.parent.getString(R.string.app_name) + " PlayList.startPlayer", ex.getMessage() == null ? "Null pointer exception(PlayList.startPlayer)" : ex.getMessage());
-                        this.startPlayer();
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
+                        Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.startPLayer]" : e.getMessage());
                     }
                 } else {
                     try {
@@ -122,10 +107,10 @@ public class PlayList {
                     this.load(false);
                 }
             } catch (final Exception e) {
+                e.printStackTrace();
                 try {
                     new Thread(() -> Utils.doPostHTTP(String.format("%s://%s:%s/%s/%s/programs?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/media_play", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version")), "")).start();
                     Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.startPLayer]" : e.getMessage());
-                    this.startPlayer();
                 } catch (Exception ex1) {
                     Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.startPLayer]" : e.getMessage());
                 }
@@ -136,28 +121,20 @@ public class PlayList {
 
     private void playMedia(String uri) {
         this.currentMediaUri = uri;
-
-        //begin by raising the volume
         mediaPlayer = new MediaPlayer(uri);
         mediaPlayer.setOnEnd(() -> {
-            this.foundMedia = false;
-            //Utils.toastOnScreen("logging media...", this.parent);
-            Utils.logEvent(EventCategory.MEDIA, EventAction.STOP, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
-            if (this.isShuttingDown) {
-                return;
+            try {
+                Utils.logEvent(EventCategory.MEDIA, EventAction.STOP, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
+            } catch (Exception e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[MediaPlayer.onError]" : e.getMessage());
             }
-            //this.load();
-            //this.startPlayer();
         });
         mediaPlayer.setOnError(() -> {
-            this.foundMedia = false;
-            //Utils.toastOnScreen("logging media...", this.parent);
-            Utils.logEvent(EventCategory.MEDIA, EventAction.STOP, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
-            if (this.isShuttingDown) {
-                return;
+            try {
+                Utils.logEvent(EventCategory.MEDIA, EventAction.STOP, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
+            } catch (Exception e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[MediaPlayer.onError]" : e.getMessage());
             }
-            //this.load();
-            //this.startPlayer();
         });
         mediaPlayer.setOnReady(() -> {
             try {
@@ -166,14 +143,12 @@ public class PlayList {
                 } else {
                     this.mediaPlayer.setVolume(getMaxVolume()); //settings were originally 0 -> 1 for android
                 }
-                //Utils.toastOnScreen("logging media...", this.parent);
                 Utils.logEvent(EventCategory.MEDIA, EventAction.START, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
             } catch (Exception ex) {
                 this.mediaPlayer.setVolume(0.9F);
             }
         });
 
-        //mediaPlayer.setVolume(getMaxVolume());
         mediaPlayer.play();
     }
 
@@ -313,7 +288,6 @@ public class PlayList {
                 }
             });
         }
-
         return media;
     }
 
@@ -330,16 +304,17 @@ public class PlayList {
 
     private void onReceiveCallSign(String url) {
         try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        try {
 
             callSignPlayer = new MediaPlayer(url);
             callSignPlayer.setOnEnd(() -> {
                 try {
                     PlayList.this.mediaPlayer.setVolume(getMaxVolume());
-                    try {
-                        Utils.logEvent(EventCategory.MEDIA, EventAction.STOP, String.format("Title: %s, Artist: %s, Location: %s", currentCallSign.getTitle(), currentCallSign.getArtists(), currentCallSign.getFileLocation()));
-                    } catch (Exception e) {
-                        Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.onReceiveCallSign]" : e.getMessage());
-                    }
+                    Utils.logEvent(EventCategory.MEDIA, EventAction.STOP, String.format("Title: %s, Artist: %s, Location: %s", currentCallSign.getTitle(), currentCallSign.getArtists(), currentCallSign.getFileLocation()));
                 } catch (Exception e) {
                     Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.onReceiveCallSign]" : e.getMessage());
                 }
@@ -412,7 +387,7 @@ public class PlayList {
 
         private void playCallSign() {
             try {
-                if (this.callSigns.size() < 1) {
+                if (this.callSigns.size() < 1 || Rootio.isInCall() || Rootio.isInSIPCall()) {
                     return;
                 }
                 if (!this.mediaIterator.hasNext()) {
