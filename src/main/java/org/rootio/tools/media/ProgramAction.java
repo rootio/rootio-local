@@ -21,9 +21,8 @@ public class ProgramAction {
             case Audio:
                 this.playlist = PlayList.getInstance();
                 this.playlist.init(this.playlists, this.streams, this.programActionType);
-                this.playlist.preload();
-                this.playlist.play();
                 this.playlist.load(true);
+                this.playlist.play();
                 break;
             case Jingle:
                 break;
@@ -40,14 +39,12 @@ public class ProgramAction {
             case Audio:
                 try {
                     this.run();
-                }
-                catch(Exception ex)
-                {
-                     //todo: log this
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
                 break;
             case Jingle:
-                 break;
+                break;
             case Outcall:
                 break;
             default:
@@ -61,10 +58,8 @@ public class ProgramAction {
             case Audio:
                 try {
                     this.playlist.pause(true);
-                }
-                catch(Exception ex)
-                {
-                    //todo: log this
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
                 break;
             case Jingle:
@@ -82,11 +77,9 @@ public class ProgramAction {
             case Audio:
                 try {
                     this.playlist.stop();
+                } catch (Exception ex) {
+                    //todo: log this
                 }
-                catch(Exception ex)
-            {
-                //todo: log this
-            }
                 break;
             case Jingle:
                 break;
@@ -97,8 +90,7 @@ public class ProgramAction {
         }
     }
 
-    public int getDuration()
-    {
+    public int getDuration() {
         return this.duration;
     }
 
