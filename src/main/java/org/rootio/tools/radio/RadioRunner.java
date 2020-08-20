@@ -5,12 +5,10 @@ import org.rootio.launcher.Rootio;
 import org.rootio.messaging.BroadcastReceiver;
 import org.rootio.messaging.Message;
 import org.rootio.messaging.MessageRouter;
-import org.rootio.services.SIP.CallState;
 import org.rootio.tools.media.Program;
 import org.rootio.tools.media.ScheduleChangeNotifiable;
 import org.rootio.tools.media.ScheduleNotifiable;
 import org.rootio.tools.persistence.DBAgent;
-import org.rootio.tools.utils.Utils;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -23,18 +21,13 @@ enum State {
 
 public class RadioRunner implements Runnable, TelephonyEventNotifiable, ScheduleNotifiable, ScheduleChangeNotifiable {
     private static RadioRunner runner;
-    private Timer timer;
-    private ScheduleBroadcastHandler br;
-    private ArrayList<Object[]> pendingIntents;
     private ArrayList<Program> programs;
     private Integer runningProgramIndex = null;
     private State state;
     private BroadcastReceiver telephonyEventBroadcastReceiver, scheduleChangeNotificationReceiver;
     private boolean isPendingScheduleReload;
-    private int radioRunnerId;
 
     private RadioRunner() {
-        this.radioRunnerId = new Random().nextInt(1000);
         this.listenForScheduleChangeNotifications();
         this.listenForTelephonyEvents();
     }
@@ -148,13 +141,8 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
 
     public void stop() {
         this.stopProgram(this.runningProgramIndex);
-        unregisterReceivers();
-
     }
 
-    private void unregisterReceivers() {
-
-    }
 
     /**
      * Returns all the program slots scheduled
@@ -213,7 +201,6 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
        // }
 
         //this.runningProgramIndex = null;
-        this.pendingIntents = new ArrayList<>();
     }
 
     /**
