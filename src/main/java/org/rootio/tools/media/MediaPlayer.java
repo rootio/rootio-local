@@ -37,6 +37,7 @@ public class MediaPlayer {
                 new Thread(endHandler).start();
             }
         } catch (Exception e) {
+            e.printStackTrace();
             status = Status.STOPPED;
             if(errorHandler != null) {
                 new Thread(errorHandler).start();
@@ -95,7 +96,6 @@ public class MediaPlayer {
     {
         status = Status.STOPPED;
         try {
-            line.drain();
             line.stop();
             line.close();
         }
