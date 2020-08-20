@@ -83,7 +83,6 @@ public class SIPService implements RootioService {
         }
         while (!isBound);
         while (Rootio.isRunning()) {
-
             try {
                 Socket cli = sck.accept();
                 new Thread(() -> handleSIPClientConnection(cli)).start();
@@ -143,6 +142,7 @@ public class SIPService implements RootioService {
     private void sendResponse(Socket cli, String response) {
         try (OutputStreamWriter wri = new OutputStreamWriter(cli.getOutputStream())) {
             wri.write(response, 0, response.length());
+            wri.flush();
         } catch (IOException ex) {
             ex.printStackTrace();
         }
