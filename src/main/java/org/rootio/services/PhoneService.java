@@ -20,10 +20,9 @@ import java.util.logging.Logger;
 
 public class PhoneService implements RootioService {
     private ModemAgent agent;
-    private int serviceId;
+    private int serviceId = 7;
     private Thread runnerThread;
     private BroadcastReceiver br;
-    private Process proc;
 
     public PhoneService() {
         agent = new ModemAgent(Configuration.getProperty("modem_port", "/dev/ttyUSB3"));
@@ -42,7 +41,7 @@ public class PhoneService implements RootioService {
         runnerThread.start();
         registerForTelephonyEvents();
 
-        new ServiceState(7, "Telephone", 1).save();
+        new ServiceState(serviceId, "Telephone", 1).save();
         while (Rootio.isRunning()) {
             try {
                 runnerThread.join();
@@ -111,7 +110,7 @@ public class PhoneService implements RootioService {
 
     private void playCall() {
         try {
-            proc = Runtime.getRuntime().exec(String.format("%s -r 8000 -c 1 -t %s %s -b 16 -t %s %s",
+            Runtime.getRuntime().exec(String.format("%s -r 8000 -c 1 -t %s %s -b 16 -t %s %s",
                     Configuration.getProperty("sox_path", "/usr/bin/sox"),
                     Configuration.getProperty("audio_driver", "alsa"), Configuration.getProperty("audio_input_device"),
                     Configuration.getProperty("audio_driver", "alsa"), Configuration.getProperty("audio_output_device", "-d")));
