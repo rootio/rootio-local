@@ -23,20 +23,21 @@ class MarkHandler implements MessageProcessor {
     }
 
     @Override
-    public boolean ProcessMessage() {
+    public void ProcessMessage() {
         if (messageParts.length != 3) {
-            return false;
+            return;
         }
 
         switch (messageParts[1]) {
             case "call":
-                return setId("call_id", messageParts[2]);
+                setId("call_id", messageParts[2]);
+                break;
             case "sms":
-                return setId("sms_id", messageParts[2]);
+                setId("sms_id", messageParts[2]);
+                break;
             case "music":
-                return setId("media_max_date_added", String.valueOf(getUsefulMinDate(messageParts[2])));
-            default:
-                return false;
+                setId("media_max_date_added", String.valueOf(getUsefulMinDate(messageParts[2])));
+                break;
         }
     }
 

@@ -14,12 +14,11 @@ public class USSDSMSHandler implements MessageProcessor, UssdResultNotifiable {
     }
 
     @Override
-    public boolean ProcessMessage() {
+    public void ProcessMessage() {
         //uncomment below if you are doing one-hit USSD requests and do not care for multiple requests in single session
         //if ((this.messageParts[1].startsWith("*") || this.messageParts[1].startsWith("#")) && this.messageParts[1].endsWith("#")) {
         //Utils.toastOnScreen("received " + messageParts[1]);
         this.doUSSDRequest(messageParts[1]);
-        return true;
         //}
         // return false;
     }

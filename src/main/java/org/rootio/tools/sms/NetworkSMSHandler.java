@@ -11,34 +11,32 @@ public class NetworkSMSHandler implements MessageProcessor {
     }
 
     @Override
-    public boolean ProcessMessage() {
+    public void ProcessMessage() {
         if (this.messageParts.length < 3) {
-            return false;
+            return;
         }
 
         if (messageParts[1].equals("wifi")) {
             if (messageParts[2].equals("on") || messageParts[2].equals("off")) {
-                return this.toggleWifi(messageParts[2]);
+                this.toggleWifi(messageParts[2]);
             }
 
             if (messageParts[2].equals("status")) {
-                return this.getWifiConnection();
+                this.getWifiConnection();
             }
 
             if (messageParts[2].equals("connect")) {
-                return this.connectToWifi(messageParts[3], messageParts[4]);
+                this.connectToWifi(messageParts[3], messageParts[4]);
             }
         } else if (messageParts[1].equals("gsm")) {
             if (messageParts[2].equals("status")) {
-                return this.getGsmConnection();
+                this.getGsmConnection();
             }
         } else if (messageParts[1].equals("data")) {
             if (messageParts[2].equals("on") || messageParts[2].equals("off")) {
-                return this.toggleData(messageParts[2]);
+                this.toggleData(messageParts[2]);
             }
         }
-        // Gibberish
-        return false;
     }
 
     private boolean toggleData(String status) {

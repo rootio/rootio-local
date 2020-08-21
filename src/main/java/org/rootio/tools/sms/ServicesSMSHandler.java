@@ -1,5 +1,8 @@
 package org.rootio.tools.sms;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class ServicesSMSHandler implements MessageProcessor{
 
     private final String from;
@@ -11,48 +14,46 @@ public class ServicesSMSHandler implements MessageProcessor{
     }
 
     @Override
-    public boolean ProcessMessage() {
+    public void ProcessMessage() {
         if (messageParts.length != 3) {
-            return false;
+            return;
         }
 
         // stopping a service
         if (messageParts[1].equals("stop")) {
             try {
-                return this.stopService(Integer.parseInt(messageParts[2]));
-            } catch (Exception ex) {
-                return false;
+                this.stopService(Integer.parseInt(messageParts[2]));
+            } catch (Exception e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[ServicesSMSHandler.processMessage]" : e.getMessage());
             }
         }
 
         // starting a srevice
         if (messageParts[1].equals("start")) {
             try {
-                return this.startService(Integer.parseInt(messageParts[2]));
-            } catch (Exception ex) {
-                return false;
+                this.startService(Integer.parseInt(messageParts[2]));
+            } catch (Exception e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[ServicesSMSHandler.processMessage]" : e.getMessage());
             }
         }
 
         //restarting a service
         if (messageParts[1].equals("restart")) {
             try {
-                return this.restartService(Integer.parseInt(messageParts[2]));
-            } catch (Exception ex) {
-                return false;
+                this.restartService(Integer.parseInt(messageParts[2]));
+            } catch (Exception e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[ServicesSMSHandler.processMessage]" : e.getMessage());
             }
         }
 
         // getting the service status
         if (messageParts[1].equals("status")) {
             try {
-                return this.getServiceStatus(Integer.parseInt(messageParts[2]));
-            } catch (Exception ex) {
-                return false;
+                this.getServiceStatus(Integer.parseInt(messageParts[2]));
+            } catch (Exception e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[ServicesSMSHandler.processMessage]" : e.getMessage());
             }
         }
-
-        return false;
     }
 
     private boolean restartService(int i) {

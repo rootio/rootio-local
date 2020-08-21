@@ -5,6 +5,8 @@ import org.rootio.tools.persistence.DBAgent;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class WhiteListSMSHandler implements MessageProcessor {
 
@@ -17,9 +19,9 @@ public class WhiteListSMSHandler implements MessageProcessor {
     }
 
     @Override
-    public boolean ProcessMessage() {
+    public void ProcessMessage() {
         if (messageParts.length != 3) {
-            return false;
+            return;
         }
 
         // adding a number
@@ -27,23 +29,20 @@ public class WhiteListSMSHandler implements MessageProcessor {
             try {
                 boolean isNumberAdded = this.addNumberToWhitelist(messageParts[2]);
                 this.respondAsyncStatusRequest(from, isNumberAdded ? String.format("The number %s was successfully added", messageParts[2]) : String.format("The number %s was not added", messageParts[2]));
-                return isNumberAdded;
-            } catch (Exception ex) {
-                return false;
+            } catch (Exception e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[WhiteListSMSHandler.processMessage]" : e.getMessage());
             }
         }
 
-        // removing a number nfrom wite;list
+        // removing a number from allowed list
         if (messageParts[1].equals("remove")) {
             try {
                 boolean isNumberRemoved = this.removeNumberFromWhitelist(messageParts[2]);
                 this.respondAsyncStatusRequest(from, isNumberRemoved ? String.format("The number %s was successfully removed", messageParts[2]) : String.format("The number %s was not added", messageParts[2]));
-                return isNumberRemoved;
-            } catch (Exception ex) {
-                return false;
+            } catch (Exception e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[WhiteListSMSHandler.processMessage]" : e.getMessage());
             }
         }
-        return false;
     }
 
     private boolean addNumberToWhitelist(String phoneNumber) {

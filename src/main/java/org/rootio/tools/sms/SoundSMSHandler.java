@@ -1,5 +1,8 @@
 package org.rootio.tools.sms;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class SoundSMSHandler implements MessageProcessor {
 
     private String[] messageParts;
@@ -9,31 +12,28 @@ public class SoundSMSHandler implements MessageProcessor {
     }
 
     @Override
-    public boolean ProcessMessage() {
+    public void ProcessMessage() {
         if (messageParts.length < 5) {
-            return false;
+            return;
         }
 
         // setting volume
         if (messageParts[4].equals("volume")) {
             try {
-                return this.setVolume(Integer.parseInt(messageParts[5]));
-            } catch (Exception ex) {
-                return false;
+                this.setVolume(Integer.parseInt(messageParts[5]));
+            } catch (Exception e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[SoundSMSHandler.processMessage]" : e.getMessage());
             }
         }
 
         // setting the equalizer
         if (messageParts[4].equals("equalizer")) {
             try {
-                return this.setEqualiser(messageParts[5]);
-            } catch (Exception ex) {
-                return false;
+                this.setEqualiser(messageParts[5]);
+            } catch (Exception e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[SoundSMSHandler.processMessage]" : e.getMessage());
             }
         }
-
-        // unknown option
-        return false;
     }
 
     /**

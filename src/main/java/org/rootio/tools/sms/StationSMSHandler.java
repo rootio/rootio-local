@@ -1,5 +1,9 @@
 package org.rootio.tools.sms;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class StationSMSHandler implements MessageProcessor {
 
     private final String from;
@@ -11,25 +15,27 @@ public class StationSMSHandler implements MessageProcessor {
     }
 
     @Override
-    public boolean ProcessMessage() {
+    public void ProcessMessage() {
         if (messageParts.length != 2) {
-            return false;
+            return;
         }
 
         // rebooting the phone
         if (messageParts[1].equals("reboot")) {
             try {
-                return this.reboot();
-            } catch (Exception ex) {
-                return false;
+                this.reboot();
+            } catch (Exception e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[StationSMSHandler.processMessage]" : e.getMessage());
             }
         }
-
-        return false;
     }
 
-    private boolean reboot() {
-        return false;
+    private void reboot() {
+        try {
+            Runtime.getRuntime().exec("reboot");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
