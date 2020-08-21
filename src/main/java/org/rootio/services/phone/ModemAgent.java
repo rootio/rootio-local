@@ -192,6 +192,13 @@ public class ModemAgent {
                 payload.put("message_id", messageId);
                 m = new Message("incoming", "sms", payload);
                 MessageRouter.getInstance().specicast(m, "org.rootio.telephony.SMS");
+            }else if (data.contains("+CMGL")) {
+                String from = data.split(",")[2].replace("\"","");
+                String dateReceived = data.split(",")[4].replace("\"","");
+                payload.put("from", from);
+                payload.put("date_received", dateReceived);
+                m = new Message("header", "sms", payload);
+                MessageRouter.getInstance().specicast(m, "org.rootio.telephony.SMS");
             } else if (data.contains("+CNSMOD")) {
                 String networkType = data.split(":")[1].split(",")[1];
                 payload.put("network_type", networkType);
@@ -206,6 +213,13 @@ public class ModemAgent {
                 payload.put("network_strength", data.split(":")[1].trim().split(",")[0]);
                 m = new Message("strength", "network", payload);
                 MessageRouter.getInstance().specicast(m, "org.rootio.telephony.NETWORK");
+            } //Special SMS commands, written on their own lines, making SMS a pain to deal with.
+            else if(data.startsWith("network") || data.startsWith("ussd") || data.startsWith("services") || data.startsWith("station") ||
+            data.startsWith("resources")||data.startsWith("sound")||data.startsWith("whitelist")||data.startsWith("mark") || (!data.startsWith("+") || !data.startsWith("ERROR") || !data.startsWith("OK") ))
+            {
+                payload.put("body", data);
+                m = new Message("body", "sms", payload);
+                MessageRouter.getInstance().specicast(m, "org.rootio.telephony.SMS");
             }
         } catch (Exception e) {
             Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[ModemAgent.routEvent]" : e.getMessage());
