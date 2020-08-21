@@ -1,6 +1,14 @@
 package org.rootio.tools.sms;
 
+import org.rootio.messaging.Message;
+import org.rootio.messaging.MessageRouter;
 import org.rootio.tools.diagnostics.DiagnosticAgent;
+import org.rootio.tools.persistence.DBAgent;
+
+import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 
 public class ResourcesSMSHandler implements MessageProcessor {
 
@@ -15,73 +23,41 @@ public class ResourcesSMSHandler implements MessageProcessor {
     }
 
     @Override
-    public boolean ProcessMessage() {
+    public void ProcessMessage() {
         this.diagnosticsAgent.runDiagnostics();
-        return false;
-
-    }
-
-    /**
-     * Gets the battery level of the phone
-     *
-     * @return String with Battery level information of the phone
-     */
-    private boolean getBatteryLevel() {
         try {
-            String response = String.format("Battery Level: %f", this.diagnosticsAgent.getBatteryLevel());
-            this.respondAsyncStatusRequest(response, from);
-            return true;
-        } catch (Exception ex) {
-            return false;
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+        this.respondAsyncStatusRequest(getResourceStatus(), from);
     }
 
-    /**
-     * Gets the storage level of the phone
-     *
-     * @return String with storage information of the phone
-     */
-    private boolean getStorageLevel() {
-        return false;
-    }
 
-    /**
-     * Gets the memory usage of the phone
-     *
-     * @return String with memory utilization information of the phone
-     */
-    private boolean getMemoryUsage() {
+    private String getResourceStatus() {
+
+        String query = "select battery_level, memory_utilization, cpu_utilization, storage_utilization from diagnostic order by id desc limit 1";
+        List<String> args = Collections.emptyList();
+        List<List<Object>> data = null;
         try {
-
-            String response = String.format("Memory Utilization: %f", this.diagnosticsAgent.getMemoryStatus());
-            this.respondAsyncStatusRequest(response, from);
-            return true;
-        } catch (Exception ex) {
-            return false;
+            data = DBAgent.getData(query, args);
+            if (data.size() > 0) {
+                return String.format("Battery: %.2f%, Mem: %.2f%, CPU: %.2f%, Storage: %.2f%", data.get(0).get(0), data.get(0).get(1), data.get(0).get(2), data.get(0).get(3));
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
-    }
-
-    /**
-     * Gets the CPU utilization of the phone
-     *
-     * @return String with CPU utilization information of the phone
-     */
-    private boolean getCPUusage() {
-        try {
-
-            String response = String.format("CPU Usage: %f", this.diagnosticsAgent.getCPUUtilization());
-            this.respondAsyncStatusRequest(response, from);
-            return true;
-
-        } catch (Exception ex) {
-            return false;
-        }
-
+        return "No resource information found";
     }
 
     @Override
     public void respondAsyncStatusRequest(String from, String data) {
         //send response SMS
+        HashMap<String, Object> payload = new HashMap<>();
+        payload.put("to", from);
+        payload.put("message", data);
+        Message message = new Message("send", "sms", payload);
+        MessageRouter.getInstance().specicast(message, "org.rootio.phone.MODEM");
     }
 
 }
