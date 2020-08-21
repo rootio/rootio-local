@@ -2,7 +2,7 @@ package org.rootio.tools.sms;
 
 public interface MessageProcessor {
 
-    public boolean ProcessMessage();
+    public void ProcessMessage();
 
     /**
      * Sends an SMS response to the SMS query
