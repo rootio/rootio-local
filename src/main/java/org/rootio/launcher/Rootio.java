@@ -21,7 +21,9 @@ public class Rootio {
             prepareConfig("C:\\rootio\\rootio.conf");
             runServices();
             registerShutDownHook();
-            Thread.currentThread().wait();
+            synchronized (Thread.currentThread()) {
+                Thread.currentThread().wait();
+            }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -77,7 +79,9 @@ public class Rootio {
         System.out.println("Shutdown interrupt received");
         //kill all the other threads
         isRunning = false;
-        Thread.currentThread().notifyAll();
+        synchronized(Rootio.class) {
+            Rootio.class.notifyAll();
+        }
     }
 
     public static void setInCall(boolean isInCall) {
