@@ -79,6 +79,7 @@ public class RadioRunner implements Runnable, TelephonyEventNotifiable, Schedule
     }
 
     private void initialiseSchedule() {
+        runningProgramIndex = null;
         this.programs = fetchPrograms();
         this.schedulePrograms(programs);
     }
