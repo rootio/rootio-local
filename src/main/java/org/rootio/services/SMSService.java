@@ -35,7 +35,7 @@ public class SMSService implements RootioService, ServiceInformationPublisher {
                 readIncomingSMS();
                 yield();
             } catch (Exception e) {
-                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[PhoneService.start]" : e.getMessage());
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[SMSService.start]" : e.getMessage());
             }
         });
         runnerThread.start();
