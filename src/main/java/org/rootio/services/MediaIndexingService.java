@@ -23,15 +23,16 @@ import java.util.stream.Stream;
 public class MediaIndexingService implements RootioService {
 
     private Thread indexingThread;
+    private final int serviceId = 7;
 
     @Override
     public void start() {
         Utils.logEvent(EventCategory.SERVICES, EventAction.START, "Media Indexing Service");
         indexingThread = new Thread(() -> {
-            while (Rootio.isRunning()) {
+            while (Rootio.getServiceStatus(serviceId)) {
                 if (isIndexingDue()) {
                     runIndexing();
-                    if (!isNewIndexEmpty()) {
+                    if (!isNewIndexEmpty() && Rootio.getServiceStatus(serviceId)) {
                         moveIndexedMedia();
                     }
                 }
@@ -44,11 +45,11 @@ public class MediaIndexingService implements RootioService {
         });
         indexingThread.start();
         new ServiceState(7,"Media Indexing", 1).save();
-        while(Rootio.isRunning()) {
+        while(Rootio.getServiceStatus(serviceId)) {
             try {
                     indexingThread.join();
             } catch (InterruptedException e) {
-                if(!Rootio.isRunning()) {
+                if(!Rootio.getServiceStatus(serviceId)) {
                     indexingThread.interrupt();
                     System.out.print("interrupted...");
                 }
@@ -66,9 +67,17 @@ public class MediaIndexingService implements RootioService {
         return false;
     }
 
+    @Override
+    public int getServiceId() {
+        return serviceId;
+    }
+
     private void runIndexing() {
         String[] directories = Configuration.getProperty("media_directories","").split(",");
-        Arrays.stream(directories).forEach(dir -> index(new File(dir.trim())));
+        Arrays.stream(directories).forEach(dir -> {
+
+            index(new File(dir.trim()));
+        });
     }
 
     private boolean isIndexingDue() {
@@ -113,8 +122,12 @@ public class MediaIndexingService implements RootioService {
         return result == null || result.size() == 0 || (long) result.get(0).get(0) < 1;
     }
 
-    private static void index(File rootDir) {
+    private void index(File rootDir) {
         //get the files in the folder
+        if(!Rootio.getServiceStatus(serviceId))
+        {
+            return;
+        }
         File[] files = rootDir.listFiles();
         try {
             List<List<String>> records = new ArrayList<>();

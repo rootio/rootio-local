@@ -6,4 +6,6 @@ public interface RootioService {
     void stop();
 
     boolean isRunning();
+
+    int getServiceId();
 }

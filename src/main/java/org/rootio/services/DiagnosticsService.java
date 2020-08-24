@@ -31,11 +31,11 @@ public class DiagnosticsService implements RootioService {
         this.isRunning = true;
 
         new ServiceState(serviceId, "Diagnostic", 1).save();
-        while (Rootio.isRunning()) {
+        while (Rootio.getServiceStatus(serviceId)) {
             try {
                 runnerThread.join();
             } catch (InterruptedException e) {
-                if (!Rootio.isRunning()) {
+                if (!Rootio.getServiceStatus(serviceId)) {
                     runnerThread.interrupt();
                 }
             }
@@ -60,6 +60,11 @@ public class DiagnosticsService implements RootioService {
     @Override
     public boolean isRunning() {
         return this.isRunning;
+    }
+
+    @Override
+    public int getServiceId() {
+        return serviceId;
     }
 
     private long getDelay() {

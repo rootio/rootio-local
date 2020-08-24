@@ -28,12 +28,15 @@ public class RadioService implements RootioService, ServiceInformationPublisher 
         this.isRunning = true;
         this.sendEventBroadcast();
         new ServiceState(4, "Radio", 1).save();
-        while (Rootio.isRunning()) {
+        while (Rootio.getServiceStatus(serviceId)) {
             try {
-                runnerThread.join();
+                synchronized(this) {
+                    wait();
+                }
             } catch (InterruptedException e) {
-                if (!Rootio.isRunning()) {
+                if (!Rootio.getServiceStatus(serviceId)) {
                     runnerThread.interrupt();
+                    shutDownService();
                 }
             }
         }
@@ -110,26 +113,6 @@ public class RadioService implements RootioService, ServiceInformationPublisher 
         cal.set(Calendar.MINUTE, 0);
         cal.set(Calendar.SECOND, 0);
         return cal.getTime();
-    }
-
-    private void setInCall(boolean inCall) {
-
-    }
-
-    private void setInSIPCall(boolean inSIPCall) {
-
-    }
-
-    private boolean getInCall() {
-        return false;
-    }
-
-    private boolean getInSIPCall() {
-        return false;
-    }
-
-    public RadioService() {
-
     }
 
     @Override

@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 
 public class PhoneService implements RootioService {
     private ModemAgent agent;
-    private int serviceId = 7;
+    private int serviceId = 1;
     private Thread runnerThread;
     private BroadcastReceiver br;
 
@@ -42,7 +42,7 @@ public class PhoneService implements RootioService {
         registerForTelephonyEvents();
 
         new ServiceState(serviceId, "Telephone", 1).save();
-        while (Rootio.isRunning()) {
+        while (Rootio.getServiceStatus(serviceId)) {
             try {
                 runnerThread.join();
             } catch (InterruptedException e) {
@@ -61,6 +61,11 @@ public class PhoneService implements RootioService {
     @Override
     public boolean isRunning() {
         return false;
+    }
+
+    @Override
+    public int getServiceId() {
+        return serviceId;
     }
 
     private void registerForTelephonyEvents() {

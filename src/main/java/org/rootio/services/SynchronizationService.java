@@ -27,11 +27,11 @@ public class SynchronizationService implements RootioService {
             synchronizationThread.start();
         }
         new ServiceState(5, "Synchronization", 1).save();
-        while (Rootio.isRunning()) {
+        while (Rootio.getServiceStatus(serviceId)) {
             try {
                 synchronizationThread.join();
             } catch (InterruptedException e) {
-                if (!Rootio.isRunning()) {
+                if (!Rootio.getServiceStatus(serviceId)) {
                     synchronizationThread.interrupt();
                 }
             }
@@ -58,5 +58,10 @@ public class SynchronizationService implements RootioService {
     @Override
     public boolean isRunning() {
         return this.isRunning;
+    }
+
+    @Override
+    public int getServiceId() {
+        return serviceId;
     }
 }

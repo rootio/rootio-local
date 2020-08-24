@@ -46,11 +46,11 @@ public class SMSService implements RootioService, ServiceInformationPublisher {
         messageThread.start();
 
         new ServiceState(serviceId, "SMS", 1).save();
-        while (Rootio.isRunning()) {
+        while (Rootio.getServiceStatus(serviceId)) {
             try {
                 runnerThread.join();
             } catch (InterruptedException e) {
-                if (!Rootio.isRunning()) {
+                if (!Rootio.getServiceStatus(serviceId)) {
                     runnerThread.interrupt();
                     messageThread.interrupt();
                 }

@@ -54,6 +54,26 @@ public class SIPService implements RootioService {
         }
     }
 
+    private void restartTwinkle()
+    {
+        try {
+            Runtime.getRuntime().exec("killall -9 twinkle");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            Runtime.getRuntime().exec("twinkle -f rootio &");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void writeTwinkleConfig()
+    {
+
+    }
+
     @Override
     public void stop() {
 
@@ -62,6 +82,11 @@ public class SIPService implements RootioService {
     @Override
     public boolean isRunning() {
         return this.isRunning;
+    }
+
+    @Override
+    public int getServiceId() {
+        return serviceId;
     }
 
     private void startListener() throws IOException {
@@ -81,7 +106,7 @@ public class SIPService implements RootioService {
             }
         }
         while (!isBound);
-        while (Rootio.isRunning()) {
+        while (Rootio.getServiceStatus(serviceId)) {
             try {
                 Socket cli = sck.accept();
                 new Thread(() -> handleSIPClientConnection(cli)).start();
