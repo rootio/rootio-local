@@ -30,7 +30,7 @@ public class ResourcesSMSHandler implements MessageProcessor {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        this.respondAsyncStatusRequest(getResourceStatus(), from);
+        this.respondAsyncStatusRequest(from, getResourceStatus());
     }
 
 
@@ -42,7 +42,7 @@ public class ResourcesSMSHandler implements MessageProcessor {
         try {
             data = DBAgent.getData(query, args);
             if (data.size() > 0) {
-                return String.format("Battery: %.2f%, Mem: %.2f%, CPU: %.2f%, Storage: %.2f%", data.get(0).get(0), data.get(0).get(1), data.get(0).get(2), data.get(0).get(3));
+                return String.format("Battery: %.2f%%, Mem: %.2f%%, CPU: %.2f%%, Storage: %.2f%%", data.get(0).get(0), data.get(0).get(1), data.get(0).get(2), data.get(0).get(3));
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
