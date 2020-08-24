@@ -82,7 +82,7 @@ public class SMSService implements RootioService, ServiceInformationPublisher {
         while (Rootio.isRunning()) {
             if(messageQueue.isEmpty()) { //do not read if messages not yet processed, might result in a double read
                 Message m = new Message("read", "sms", new HashMap<>());
-                MessageRouter.getInstance().specicast(m, "org.rootio.services.SMS");
+                MessageRouter.getInstance().specicast(m, "org.rootio.phone.MODEM");
             }
             try {
                 Thread.sleep(60000);
@@ -99,7 +99,7 @@ public class SMSService implements RootioService, ServiceInformationPublisher {
                 messageQueue.add(message);
             }
         };
-        MessageRouter.getInstance().register(smsReceiver, "org.rootio.services.SMS");
+        MessageRouter.getInstance().register(smsReceiver, "org.rootio.telephony.SMS");
     }
 
     private void processMessages() {
