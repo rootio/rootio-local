@@ -10,14 +10,15 @@ import org.rootio.tools.utils.EventAction;
 import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SIPService implements RootioService {
     private ServerSocket sck;
@@ -27,7 +28,7 @@ public class SIPService implements RootioService {
 
     @Override
     public void start() {
-        Utils.logEvent(EventCategory.SERVICES, EventAction.START, "Media Indexing Service");
+        Utils.logEvent(EventCategory.SERVICES, EventAction.START, "SIP Service");
         runnerThread = new Thread(() -> {
             try {
                 startListener();
@@ -41,14 +42,19 @@ public class SIPService implements RootioService {
         new ServiceState(serviceId, "SIPService", 1).save();
         while (Rootio.isRunning()) {
             try {
-                runnerThread.join();
+                try
+                {
+                    writeTwinkleConfig();
+                    restartTwinkle();
+                }
+                catch(IOException e)
+                {
+                    Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[SIPService.start]" : e.getMessage());
+                }
+                runnerThread.wait();
             } catch (InterruptedException e) {
                 if (!Rootio.isRunning()) {
-                    try {
-                        sck.close();
-                    } catch (IOException ioException) {
-                        ioException.printStackTrace();
-                    }
+                    stop();
                 }
             }
         }
@@ -63,20 +69,50 @@ public class SIPService implements RootioService {
         }
 
         try {
-            Runtime.getRuntime().exec("twinkle -f rootio &");
+            Runtime.getRuntime().exec(String.format("twinkle -f %s &", Configuration.getProperty("twinkle_profile","raspi")));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void writeTwinkleConfig()
-    {
+    private void writeTwinkleConfig() throws IOException {
+        Properties twinkleConfig = new Properties();
+        File twinkleConfigFile = new File(Configuration.getProperty("twinkle_config_path","~/.twinkle/raspi.cfg"));
+        try(InputStream instr = new FileInputStream(twinkleConfigFile))
+        {
+            twinkleConfig.load(instr);
+        }
+        twinkleConfig.setProperty("user_name", Configuration.getProperty("sip_user_name"));
+        twinkleConfig.setProperty("user_domain", Configuration.getProperty("sip_server"));
+        twinkleConfig.setProperty("auth_realm", Configuration.getProperty("sip_server"));
+        twinkleConfig.setProperty("auth_pass", Configuration.getProperty("sip_password"));
+        twinkleConfig.setProperty("registrar", Configuration.getProperty("sip_server"));
+        twinkleConfig.setProperty("sip_transport", Configuration.getProperty("sip_transport"));
+        twinkleConfig.setProperty("stun_server", Configuration.getProperty("sip_stun_server"));
 
+        //scripts called by twinkle to communicate change in status
+        twinkleConfig.setProperty("script_incoming_call", Configuration.getProperty("sip_script_incoming_call"));
+        twinkleConfig.setProperty("script_in_call_answered", Configuration.getProperty("sip_script_in_call_answered"));
+        twinkleConfig.setProperty("script_in_call_failed", Configuration.getProperty("sip_script_in_call_failed"));
+        twinkleConfig.setProperty("script_local_release", Configuration.getProperty("sip_script_local_release"));
+        twinkleConfig.setProperty("script_remote_release", Configuration.getProperty("sip_script_remote_release"));
+
+        try(FileWriter wri = new FileWriter(twinkleConfigFile))
+        {
+            twinkleConfig.store(wri,"Config Modified by Rootio");
+        }
     }
+
 
     @Override
     public void stop() {
-
+        if(sck != null) {
+            try {
+                sck.close();
+            } catch (IOException e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[SIPService.stop]" : e.getMessage());
+            }
+        }
     }
 
     @Override
@@ -110,8 +146,8 @@ public class SIPService implements RootioService {
             try {
                 Socket cli = sck.accept();
                 new Thread(() -> handleSIPClientConnection(cli)).start();
-            } catch (IOException ex) {
-                ex.printStackTrace();
+            } catch (IOException e) {
+                Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[SIPService.startListener]" : e.getMessage());
             }
         }
     }
@@ -128,8 +164,8 @@ public class SIPService implements RootioService {
             InputStreamReader instr = new InputStreamReader(con.getInputStream());
             instr.read(buf, 0, buf.length);
 
-        } catch (IOException ex) {
-            ex.printStackTrace();
+        } catch (IOException e) {
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[SIPService.readIncomingEvent]" : e.getMessage());
         }
         return new String(buf);
     }
@@ -139,12 +175,14 @@ public class SIPService implements RootioService {
         JSONObject response = new JSONObject();
         switch (event.getString("event_type")) {
             case "call_ringing":
+                Utils.logEvent(EventCategory.SIP_CALL, EventAction.RINGING, event.toString());
                 //broadcast the state
                 announceCallStatus(CallState.RINGING);
                 //send back a true.
                 response.put("status", "ok");
                 return response;
             case "call_answer":
+                Utils.logEvent(EventCategory.SIP_CALL, EventAction.RECEIVE, event.toString());
                 //broadcast the state
                 Rootio.setInSIPCall(true);
                 announceCallStatus(CallState.INCALL);
@@ -153,6 +191,7 @@ public class SIPService implements RootioService {
                 return response;
             case "call_release":
                 Rootio.setInSIPCall(false);
+                Utils.logEvent(EventCategory.SIP_CALL, EventAction.STOP, event.toString());
                 //broadcast the state
                 announceCallStatus(CallState.IDLE);
                 //send back a true.
