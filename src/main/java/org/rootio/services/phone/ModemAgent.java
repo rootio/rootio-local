@@ -285,6 +285,11 @@ public class ModemAgent {
                         writeToSerial(command);
                     }
                 }
+                else if(m.getCategory().equals("at"))
+                {
+                    String command = (String)m.getPayLoad().get("command");
+                    writeToSerial(command);
+                }
             }
         };
         MessageRouter.getInstance().register(broadcastReceiver, "org.rootio.phone.MODEM");

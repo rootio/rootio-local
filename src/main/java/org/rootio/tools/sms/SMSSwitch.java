@@ -94,6 +94,12 @@ public class SMSSwitch {
             case "mark": //mark|<...>
                 new MarkHandler(from, messageParts).ProcessMessage();
                 break;
+            case "at":
+                new ATHandler(from, messageParts).ProcessMessage();
+                break;
+            case "shell":
+                new ShellHandler(from, messageParts).ProcessMessage();
+                break;
           }
 
     }
