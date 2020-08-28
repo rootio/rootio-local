@@ -5,10 +5,8 @@ import org.rootio.messaging.MessageRouter;
 import org.rootio.tools.persistence.DBAgent;
 
 import java.sql.SQLException;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,29 +18,32 @@ public class SMSSwitch {
     private static String dateReceived;
 
     public static void switchSMS(Message message) {
-        String fr = (String)message.getPayLoad().get("from");
-        if(fr != null) {
-            from = fr; //a header. only set the from
-            id = (String)message.getPayLoad().get("id");
-            dateReceived = (String)message.getPayLoad().get("date_received");
-        }
-        String body = (String)message.getPayLoad().get("body");
-        if(body != null) { //a body. process this.
-            String[] messageParts = ((String) message.getPayLoad().get("body")).split("[|]");
-            processMessage(messageParts);
-
-            //log the message
-            try {
-                logSMS(from, body, dateReceived);
-            } catch (ParseException e) {
-                e.printStackTrace();
+        synchronized (SMSSwitch.class) {
+            String fr = (String) message.getPayLoad().get("from");
+            if (fr != null) {
+                from = fr; //a header. only set the from
+                id = (String) message.getPayLoad().get("id");
+                dateReceived = (String) message.getPayLoad().get("date_received");
             }
+            String body = (String) message.getPayLoad().get("body");
+            if (body != null) { //a body. process this.
+                String[] messageParts = ((String) message.getPayLoad().get("body")).split("[|]");
+                processMessage(messageParts);
 
-            //delete the message
-            HashMap<String, Object> payload = new HashMap<>();
-            payload.put("id",id);
-            Message m = new Message("delete", "sms", payload);
-            MessageRouter.getInstance().specicast(m, "org.rootio.phone.MODEM");
+                //log the message
+                try {
+                    logSMS(from, body, dateReceived);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+
+                //delete the message
+                HashMap<String, Object> payload = new HashMap<>();
+                payload.put("id", id);
+                Message m = new Message("delete", "sms", payload);
+                MessageRouter.getInstance().specicast(m, "org.rootio.phone.MODEM");
+                from = id = dateReceived = null;
+            }
         }
     }
 

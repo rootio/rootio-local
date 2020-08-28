@@ -238,61 +238,65 @@ public class ModemAgent {
         this.broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Message m) {
-                if (m.getCategory().equals("sms")) {
-                    if (m.getEvent().equals("send")) {
-                        String to = (String) m.getPayLoad().get("to");
-                        String message = (String) m.getPayLoad().get("message");
-                        String command = "AT+CMGS=\"" + to + "\"\r\n";
-                        writeToSerial(command);
-                        try {
-                            Thread.sleep(100);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        writeToSerial(message + "\u001A");
-                    } else if (m.getEvent().equals("read")) {
-                        String command = "AT+CMGL=\"ALL\"";
-                        writeToSerial(command);
-                    } else if (m.getEvent().equals("delete")) {
-                        String command = "AT+CMGD=" + m.getPayLoad().get("id");
-                        writeToSerial(command);
-                    }
-                } else if (m.getCategory().equals("gps")) {
-                    if (m.getEvent().equals("read")) {
-                        String command = "AT+CGPSINFO";
-                        writeToSerial(command);
-                    }
-                } else if (m.getCategory().equals("call")) {
-                    if (m.getEvent().equals("answer")) {
-                        String command = "ATA";
-                        writeToSerial(command);
-                    } else if (m.getEvent().equals("decline")) {
-                        String command = "AT+CHUP";
-                        writeToSerial(command);
-                    } else if (m.getEvent().equals("status")) {
-                        String command = "AT+CLCC";
-                        writeToSerial(command);
-                    }
-                } else if (m.getCategory().equals("network")) {
-                    if (m.getEvent().equals("name")) {
-                        String command = "AT+COPS?";
-                        writeToSerial(command);
-                    } else if (m.getEvent().equals("type")) {
-                        String command = "AT+CNSMOD?";
-                        writeToSerial(command);
-                    } else if (m.getEvent().equals("strength")) {
-                        String command = "AT+CSQ";
-                        writeToSerial(command);
-                    }
-                }
-                else if(m.getCategory().equals("at"))
-                {
-                    String command = (String)m.getPayLoad().get("command");
-                    writeToSerial(command);
-                }
+                doATCommand(m);
             }
         };
         MessageRouter.getInstance().register(broadcastReceiver, "org.rootio.phone.MODEM");
         MessageRouter.getInstance().register(broadcastReceiver, "org.rootio.services.phone.MODEM");
+    }
+
+    private void doATCommand(Message m) {
+        synchronized (this) {
+            if (m.getCategory().equals("sms")) {
+                if (m.getEvent().equals("send")) {
+                    String to = (String) m.getPayLoad().get("to");
+                    String message = (String) m.getPayLoad().get("message");
+                    String command = "AT+CMGS=\"" + to + "\"\r\n";
+                    writeToSerial(command);
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    writeToSerial(message + "\u001A");
+                } else if (m.getEvent().equals("read")) {
+                    String command = "AT+CMGL=\"ALL\"";
+                    writeToSerial(command);
+                } else if (m.getEvent().equals("delete")) {
+                    String command = "AT+CMGD=" + m.getPayLoad().get("id");
+                    writeToSerial(command);
+                }
+            } else if (m.getCategory().equals("gps")) {
+                if (m.getEvent().equals("read")) {
+                    String command = "AT+CGPSINFO";
+                    writeToSerial(command);
+                }
+            } else if (m.getCategory().equals("call")) {
+                if (m.getEvent().equals("answer")) {
+                    String command = "ATA";
+                    writeToSerial(command);
+                } else if (m.getEvent().equals("decline")) {
+                    String command = "AT+CHUP";
+                    writeToSerial(command);
+                } else if (m.getEvent().equals("status")) {
+                    String command = "AT+CLCC";
+                    writeToSerial(command);
+                }
+            } else if (m.getCategory().equals("network")) {
+                if (m.getEvent().equals("name")) {
+                    String command = "AT+COPS?";
+                    writeToSerial(command);
+                } else if (m.getEvent().equals("type")) {
+                    String command = "AT+CNSMOD?";
+                    writeToSerial(command);
+                } else if (m.getEvent().equals("strength")) {
+                    String command = "AT+CSQ";
+                    writeToSerial(command);
+                }
+            } else if (m.getCategory().equals("at")) {
+                String command = (String) m.getPayLoad().get("command");
+                writeToSerial(command);
+            }
+        }
     }
 }
