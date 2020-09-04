@@ -129,7 +129,7 @@ public class DiagnosticsService implements RootioService {
             values.put("memory_utilization", diagnosticAgent.getMemoryStatus());
             values.put("storage_utilization", diagnosticAgent.getStorageStatus());
             values.put("cpu_utilization", diagnosticAgent.getCPUUtilization());
-            values.put("wifi_connected", diagnosticAgent.isConnectedToWifi());
+            values.put("wifi_strength", diagnosticAgent.getWifiStrength());
             values.put("first_mobile_network_name", diagnosticAgent.getTelecomOperatorName());
             values.put("first_mobile_network_strength", diagnosticAgent.getMobileSignalStrength());
             values.put("first_mobile_network_type", diagnosticAgent.getMobileNetworkType());

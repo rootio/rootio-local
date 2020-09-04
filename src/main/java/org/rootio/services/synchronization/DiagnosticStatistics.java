@@ -18,7 +18,7 @@ public class DiagnosticStatistics {
     private List<Float> cpuData, memoryData, storageData, batteryData, mobileNetworkStrength, latitudeData, longitudeData;
     private List<Date> dateData;
     private List<Integer> idData;
-    private List<Boolean> wifiConnectivityData;
+    private List<Float> wifiConnectivityData;
     private List<String> mobileNetworkName, mobileNetworkType;
     private int size;
 
@@ -32,7 +32,7 @@ public class DiagnosticStatistics {
       * diagnostics
      */
     private void LoadDiagnosticsData() throws SQLException {
-        String query = "select battery_level, first_mobile_network_name, first_mobile_network_type, first_mobile_network_strength, wifi_connected, storage_utilization, memory_utilization, cpu_utilization, id, diagnostic_time, latitude, longitude  from diagnostic ";
+        String query = "select battery_level, first_mobile_network_name, first_mobile_network_type, first_mobile_network_strength, wifi_strength, storage_utilization, memory_utilization, cpu_utilization, id, diagnostic_time, latitude, longitude  from diagnostic ";
         List<String> filterArgs = Arrays.asList();
         //DBAgent agent = new DBAgent(this.parent);
         List<List<Object>> results = DBAgent.getData(query, filterArgs);
@@ -59,7 +59,7 @@ public class DiagnosticStatistics {
             mobileNetworkStrength.add((float)row.get(3));
             mobileNetworkName.add((String)row.get(1));
             mobileNetworkType.add((String)row.get(2));
-            wifiConnectivityData.add((boolean)row.get(4));
+            wifiConnectivityData.add((float)row.get(4));
             latitudeData.add((float)row.get(10));
             longitudeData.add((float)row.get(11));
         });
@@ -179,7 +179,7 @@ public class DiagnosticStatistics {
      * @return Double representing average WiFI availability for the day
      */
     public double getAverageWiFIAvailability() {
-        return wifiConnectivityData.stream().filter(d -> d ).count()/wifiConnectivityData.size();
+        return wifiConnectivityData.stream().mapToDouble(d -> d ).average().getAsDouble();
     }
 
     /**
