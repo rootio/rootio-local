@@ -52,14 +52,17 @@ public class DiagnosticAgent {
      */
     private void loadWifiStrength() { //debian only. please extend as necessary
         try {
-            Process proc = Runtime.getRuntime().exec("iw wlan0 link | grep signal");
-            char[] result = new char[100];
+            Process proc = Runtime.getRuntime().exec("iw wlan0 link");
+            char[] result = new char[1000];
             try (InputStreamReader rdr = new InputStreamReader(proc.getInputStream())) {
                 rdr.read(result);
             }
             String response = new String(result);
-            wifiStrength = Float.parseFloat(response.split(" ")[1]);
-        } catch (NumberFormatException | ArrayIndexOutOfBoundsException | IOException ex) {
+            if(response.contains("signal:")) {
+                wifiStrength = Float.parseFloat(response.substring(response.indexOf("signal:") + 8, response.indexOf("dBm") -1));
+            }
+        } catch (NumberFormatException | ArrayIndexOutOfBoundsException | IOException e) {
+            Logger.getLogger("RootIO").log(Level.INFO, e.getMessage() == null ? "Null pointer[DiagnosticAgent.loadWifiStrength]" : e.getMessage());
             wifiStrength = 0;
         }
     }
