@@ -3,6 +3,7 @@ package org.rootio.services;
 import org.json.JSONObject;
 import org.rootio.configuration.Configuration;
 import org.rootio.launcher.Rootio;
+import org.rootio.messaging.BroadcastReceiver;
 import org.rootio.messaging.Message;
 import org.rootio.messaging.MessageRouter;
 import org.rootio.services.SIP.CallState;
@@ -42,16 +43,13 @@ public class SIPService implements RootioService {
         new ServiceState(serviceId, "SIPService", 1).save();
         while (Rootio.isRunning()) {
             try {
-                try
-                {
+                try {
                     writeTwinkleConfig();
                     restartTwinkle();
-                }
-                catch(IOException e)
-                {
+                } catch (IOException e) {
                     Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[SIPService.start]" : e.getMessage());
                 }
-                runnerThread.wait();
+                runnerThread.join();
             } catch (InterruptedException e) {
                 if (!Rootio.isRunning()) {
                     stop();
@@ -60,53 +58,57 @@ public class SIPService implements RootioService {
         }
     }
 
-    private void restartTwinkle()
-    {
+    private void restartTwinkle() {
         try {
-            Runtime.getRuntime().exec("killall -9 twinkle");
-        } catch (IOException e) {
+            Runtime.getRuntime().exec("/usr/bin/killall -9 twinkle");
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
-        try {
-            Runtime.getRuntime().exec(String.format("twinkle -f %s &", Configuration.getProperty("twinkle_profile","raspi")));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        new Thread(() -> {
+            try {
+                Process proc = Runtime.getRuntime().exec(String.format("/usr/bin/twinkle -c -f %s", Configuration.getProperty("twinkle_config_path")));
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     private void writeTwinkleConfig() throws IOException {
         Properties twinkleConfig = new Properties();
-        File twinkleConfigFile = new File(Configuration.getProperty("twinkle_config_path","~/.twinkle/raspi.cfg"));
-        try(InputStream instr = new FileInputStream(twinkleConfigFile))
-        {
+        File twinkleConfigFile = new File(Configuration.getProperty("twinkle_config_path"));
+        try (InputStream instr = new FileInputStream(twinkleConfigFile)) {
             twinkleConfig.load(instr);
         }
-        twinkleConfig.setProperty("user_name", Configuration.getProperty("sip_user_name"));
+        twinkleConfig.setProperty("user_name", Configuration.getProperty("sip_username"));
         twinkleConfig.setProperty("user_domain", Configuration.getProperty("sip_server"));
         twinkleConfig.setProperty("auth_realm", Configuration.getProperty("sip_server"));
         twinkleConfig.setProperty("auth_pass", Configuration.getProperty("sip_password"));
-        twinkleConfig.setProperty("registrar", Configuration.getProperty("sip_server"));
-        twinkleConfig.setProperty("sip_transport", Configuration.getProperty("sip_transport"));
+        twinkleConfig.setProperty("auth_name", Configuration.getProperty("sip_username"));
+        twinkleConfig.setProperty("sip_transport", Configuration.getProperty("sip_protocol"));
         twinkleConfig.setProperty("stun_server", Configuration.getProperty("sip_stun_server"));
 
         //scripts called by twinkle to communicate change in status
-        twinkleConfig.setProperty("script_incoming_call", Configuration.getProperty("sip_script_incoming_call"));
-        twinkleConfig.setProperty("script_in_call_answered", Configuration.getProperty("sip_script_in_call_answered"));
-        twinkleConfig.setProperty("script_in_call_failed", Configuration.getProperty("sip_script_in_call_failed"));
-        twinkleConfig.setProperty("script_local_release", Configuration.getProperty("sip_script_local_release"));
-        twinkleConfig.setProperty("script_remote_release", Configuration.getProperty("sip_script_remote_release"));
+        twinkleConfig.setProperty("script_incoming_call", Configuration.getProperty("script_incoming_call"));
+        twinkleConfig.setProperty("script_in_call_answered", Configuration.getProperty("script_in_call_answered"));
+        twinkleConfig.setProperty("script_in_call_failed", Configuration.getProperty("script_in_call_failed"));
+        twinkleConfig.setProperty("script_local_release", Configuration.getProperty("script_local_release"));
+        twinkleConfig.setProperty("script_remote_release", Configuration.getProperty("script_remote_release"));
 
-        try(FileWriter wri = new FileWriter(twinkleConfigFile))
-        {
-            twinkleConfig.store(wri,"Config Modified by Rootio");
+        try (FileWriter wri = new FileWriter(twinkleConfigFile)) {
+            twinkleConfig.store(wri, "Config Modified by Rootio");
         }
     }
 
 
     @Override
     public void stop() {
-        if(sck != null) {
+        if (sck != null) {
             try {
                 sck.close();
             } catch (IOException e) {
@@ -127,7 +129,7 @@ public class SIPService implements RootioService {
 
     private void startListener() throws IOException {
         sck = new ServerSocket();
-        InetSocketAddress addr = new InetSocketAddress(Integer.parseInt(Configuration.getProperty("sip_client_port", "5555")));
+        InetSocketAddress addr = new InetSocketAddress(Integer.parseInt(Configuration.getProperty("sip_script_port", "5000")));
         boolean isBound = false;
         do {
             try {
@@ -209,6 +211,16 @@ public class SIPService implements RootioService {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+    }
+
+    private void listenForSIPConfigurationChange() {
+        BroadcastReceiver br = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Message m) {
+                restartTwinkle();
+            }
+        };
+        MessageRouter.getInstance().register(br, "org.rootio.service.sip.CONFIGURATION");
     }
 
     private void announceCallStatus(CallState callState) {
