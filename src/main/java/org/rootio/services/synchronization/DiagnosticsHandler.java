@@ -7,6 +7,7 @@ import org.rootio.tools.persistence.DBAgent;
 
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,7 +40,7 @@ public class DiagnosticsHandler implements SynchronizationHandler {
 
             for (int i = 0; i < objects.length(); i++) {
                 if (objects.getJSONObject(i).getBoolean("status")) {
-                    this.deleteSyncedRecord(objects.getJSONObject(i).getString("id"));
+                    this.deleteSyncedRecord(String.valueOf(objects.getJSONObject(i).getInt("id")));
                 }
             }
         } catch (Exception e) {
@@ -50,11 +51,8 @@ public class DiagnosticsHandler implements SynchronizationHandler {
     private long deleteSyncedRecord(String id) throws SQLException {
         String tableName = "diagnostic";
         String whereClause = "id = ?";
-        List<String> filterArgs = Arrays.asList(id);
-        try {
-            return DBAgent.deleteRecords(tableName, whereClause, filterArgs);
-        } catch (SQLException e) {
-            throw e;        }
+        List<String> filterArgs = Collections.singletonList(id);
+        return DBAgent.deleteRecords(tableName, whereClause, filterArgs);
     }
 
     @Override
