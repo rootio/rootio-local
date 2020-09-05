@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.TooManyListenersException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -22,20 +24,28 @@ public class ModemAgent {
     private OutputStream out;
     private BroadcastReceiver broadcastReceiver;
     private SerialPort serialPort;
+    private Lock lock;
 
     public ModemAgent(String port) {
         this.port = port;
+        this.lock = new ReentrantLock();
     }
 
     public void start() {
+        connectToModem();
+        this.listenForCommands();
+    }
+
+    private void connectToModem() {
         boolean isConnected = false;
+        lock.tryLock();
         do {
             try {
                 isConnected = this.connect(this.port, 115200);
             } catch (Exception e) {
                 e.printStackTrace();
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(15000);
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
                 }
@@ -43,9 +53,8 @@ public class ModemAgent {
 
         }
         while (!isConnected);
-
+        lock.unlock();
         this.prepareModem();
-        this.listenForCommands();
     }
 
     boolean connect(String portName, int rate) throws NoSuchPortException, UnsupportedCommOperationException, PortInUseException {
@@ -116,7 +125,17 @@ public class ModemAgent {
 
     public void shutDown() {
         try {
-            serialPort.close();
+            out.close();
+            in.close();
+        } catch (Exception e) {
+            Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[ModemAgent.shutDown]" : e.getMessage());
+        }
+
+        try {
+            if (serialPort != null) {
+                serialPort.removeEventListener();
+                serialPort.close();
+            }
         } catch (Exception e) {
             Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[ModemAgent.shutDown]" : e.getMessage());
         }
@@ -132,9 +151,11 @@ public class ModemAgent {
             this.out.write(("\r").getBytes());
             this.out.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            shutDown();
+            connectToModem();
         }
     }
+
 
     private void prepareModem() //prime the modem for our operations
     {
@@ -162,6 +183,7 @@ public class ModemAgent {
         Message m;
         HashMap<String, Object> payload = new HashMap<>();
         try {
+            Logger.getLogger("RootIO").log(Level.INFO, "Modem Says:" + data);
             synchronized (this) {
                 if (data.contains("+CLCC")) {
                     String[] parts = data.split(",");
@@ -220,8 +242,7 @@ public class ModemAgent {
                 } //Special SMS commands, written on their own lines, making SMS a pain to deal with.
                 else if (data.startsWith("network") || data.startsWith("ussd") || data.startsWith("services") || data.startsWith("station") ||
                         data.startsWith("resources") || data.startsWith("sound") || data.startsWith("whitelist") || data.startsWith("mark") ||
-                        !((data.startsWith("+") || data.startsWith("ERROR") || data.startsWith("OK") ||data.startsWith(">") || data.startsWith("ATE0"))))
-                {
+                        !((data.startsWith("+") || data.startsWith("ERROR") || data.startsWith("OK") || data.startsWith(">") || data.startsWith("ATE0")))) {
                     payload.put("body", data);
                     m = new Message("body", "sms", payload);
                     MessageRouter.getInstance().specicast(m, "org.rootio.telephony.SMS");
