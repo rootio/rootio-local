@@ -3,8 +3,11 @@ package org.rootio.tools.media;
 import javax.sound.sampled.*;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 public class MediaPlayer {
+    private URL streamUrl;
+    private boolean isStream;
     private Runnable errorHandler, endHandler, readyHandler;
     private String filename;
     private SourceDataLine line;
@@ -15,19 +18,30 @@ public class MediaPlayer {
         this.filename = filename;
     }
 
+    MediaPlayer(URL path)
+    {
+        this.streamUrl = path;
+        this.isStream = true;
+    }
+
     public void play() {
         AudioInputStream din = null;
         AudioInputStream in = null;
         try {
-            File file = new File(filename);
-            in = AudioSystem.getAudioInputStream(file);
+            if(!isStream) {
+                File file = new File(filename);
+                in = AudioSystem.getAudioInputStream(file);
+
+            }
+            else
+            {
+                in = AudioSystem.getAudioInputStream(this.streamUrl);
+            }
             AudioFormat baseFormat = in.getFormat();
-            AudioFormat decodedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
-                    baseFormat.getSampleRate(),
+            AudioFormat decodedFormat = new AudioFormat(baseFormat.getSampleRate(),
                     16,
                     baseFormat.getChannels(),
-                    baseFormat.getChannels() * 2,
-                    baseFormat.getSampleRate(),
+                    true,
                     false);
             din = AudioSystem.getAudioInputStream(decodedFormat, in);
             status = Status.PLAYING;

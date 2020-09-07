@@ -7,6 +7,8 @@ import org.rootio.tools.utils.EventAction;
 import org.rootio.tools.utils.EventCategory;
 import org.rootio.tools.utils.Utils;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Level;
@@ -82,7 +84,7 @@ public class PlayList {
                     String stream = this.streamIterator.next();
                     currentMedia = new Media("", stream, 0, null);
                     try {
-                        playMedia(currentMedia.getFileLocation());
+                        playMedia(currentMedia.getFileLocation(), true);
                         new Thread(() -> Utils.doPostHTTP(String.format("%s://%s:%s/%s/%s/programs?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/media_play", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version")), "")).start();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -118,10 +120,27 @@ public class PlayList {
         }
     }
 
-
     private void playMedia(String uri) {
+        playMedia(uri, false);
+    }
+
+
+    private void playMedia(String uri, boolean isUrl) {
         this.currentMediaUri = uri;
-        mediaPlayer = new MediaPlayer(uri);
+        try {
+            if(isUrl)
+            {
+                mediaPlayer = new MediaPlayer(new URL(uri));
+            }
+            else
+            {
+                mediaPlayer = new MediaPlayer(uri);
+            }
+
+        } catch (MalformedURLException e) {
+            Logger.getLogger("RootIO").log(Level.SEVERE, e.getMessage() == null ? "Null pointer[MediaPlayer.onError]" : e.getMessage());
+            return;
+        }
         mediaPlayer.setOnEnd(() -> {
             try {
                 Utils.logEvent(EventCategory.MEDIA, EventAction.STOP, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
@@ -208,21 +227,18 @@ public class PlayList {
                 {
                     this.fadeOut();
                 }
-
                 Utils.logEvent(EventCategory.MEDIA, EventAction.PAUSE, String.format("Title: %s, Artist: %s, Location: %s", currentMedia.getTitle(), currentMedia.getArtists(), currentMedia.getFileLocation()));
                 try {
                     mediaPlayer.stop(); //advised that media players should never be reused, even in pause/play scenarios
                 } catch (Exception e) {
                     Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.pause]" : e.getMessage());
                 }
-
                 try {
                     //stop the call sign player as well
                     this.callSignPlayer.stop(); //this thread is sleeping! TODO: interrupt it
                 } catch (Exception e) {
                     Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.pause]" : e.getMessage());
                 }
-
                 //stop the callSign looper so they do not play during the call
                 this.callSignProvider.stop();
             }
