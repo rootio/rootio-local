@@ -43,7 +43,7 @@ public class ModemAgent {
             try {
                 isConnected = this.connect(this.port, 115200);
             } catch (Exception e) {
-                e.printStackTrace();
+                Logger.getLogger("RootIO").logp(Level.SEVERE, ModemAgent.class.getName(), "connectToModem", e.getMessage() == null ? "Null pointer" : e.getMessage());
                 try {
                     Thread.sleep(15000);
                 } catch (InterruptedException interruptedException) {
@@ -60,7 +60,6 @@ public class ModemAgent {
     boolean connect(String portName, int rate) throws NoSuchPortException, UnsupportedCommOperationException, PortInUseException {
         CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(portName);
         if (portIdentifier.isCurrentlyOwned()) {
-            System.out.println("Error: Port is currently in use");
             return false;
         } else {
 
