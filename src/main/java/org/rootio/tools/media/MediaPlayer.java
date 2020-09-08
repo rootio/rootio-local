@@ -4,6 +4,8 @@ import javax.sound.sampled.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MediaPlayer {
     private URL streamUrl;
@@ -91,8 +93,14 @@ public class MediaPlayer {
             }
             int nBytesRead = 0, nBytesWritten = 0;
             while (nBytesRead != -1) {
-                nBytesRead = din.read(data, 0, data.length);
-                if (nBytesRead != -1) nBytesWritten = line.write(data, 0, nBytesRead);
+                try {
+                    nBytesRead = din.read(data, 0, data.length);
+                    if (nBytesRead != -1) nBytesWritten = line.write(data, 0, nBytesRead);
+                }
+                catch(StringIndexOutOfBoundsException e) //does happen on streams!
+                {
+                    Logger.getLogger("RootIO").log(Level.SEVERE, e.getMessage() == null ? "Null pointer[MediaPlayer.rawplay]" : e.getMessage());
+                }
             }
             stop();
             din.close();
