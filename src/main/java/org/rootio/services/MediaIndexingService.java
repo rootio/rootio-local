@@ -144,7 +144,7 @@ public class MediaIndexingService implements RootioService {
                         try {
                             af = AudioFileIO.read(k.getAbsoluteFile());
                             Tag tag = af.getTag();
-                            records.add(Arrays.asList(tag.getFirst(FieldKey.TITLE), tag.getFirst(FieldKey.ALBUM), tag.getFirst(FieldKey.ARTIST), af.getFile().getAbsolutePath(), String.valueOf(af.getAudioHeader().getTrackLength())));
+                            records.add(Arrays.asList(tag.getFirst(FieldKey.TITLE), tag.getFirst(FieldKey.ARTIST), tag.getFirst(FieldKey.ALBUM), af.getFile().getAbsolutePath(), String.valueOf(af.getAudioHeader().getTrackLength())));
                         }
                         //maybe do individual things with the exceptions
                         catch (Exception e) {
