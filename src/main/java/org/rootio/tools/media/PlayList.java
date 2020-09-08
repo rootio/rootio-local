@@ -78,6 +78,7 @@ public class PlayList {
     }
 
     private void startPlayer() {
+
         while ((mediaIterator.hasNext() || streamIterator.hasNext()) && !this.isShuttingDown && !Rootio.isInCall() && !Rootio.isInSIPCall()) {
             try {
                 if (streamIterator.hasNext()) {
@@ -91,7 +92,7 @@ public class PlayList {
                         Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.startPLayer]" : e.getMessage());
                     }
 
-                } else if (mediaIterator.hasNext()) {
+                } else{
                     currentMedia = mediaIterator.next();
                     try {
                         playMedia(currentMedia.getFileLocation());
@@ -100,13 +101,6 @@ public class PlayList {
                         e.printStackTrace();
                         Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.startPLayer]" : e.getMessage());
                     }
-                } else {
-                    try {
-                        Thread.sleep(10000);
-                    } catch (InterruptedException ex) {
-
-                    }
-                    this.load(false);
                 }
             } catch (final Exception e) {
                 e.printStackTrace();
@@ -117,6 +111,10 @@ public class PlayList {
                     Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[Playlist.startPLayer]" : e.getMessage());
                 }
             }
+        }
+        if(!mediaIterator.hasNext() && !streamIterator.hasNext())//we have run out of media. reset.
+        {
+           this.load(true);
         }
     }
 
