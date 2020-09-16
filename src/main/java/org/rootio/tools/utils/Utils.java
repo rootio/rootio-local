@@ -2,15 +2,15 @@ package org.rootio.tools.utils;
 
 import org.json.JSONObject;
 import org.rootio.configuration.Configuration;
-import org.rootio.services.DiagnosticsService;
 import org.rootio.tools.persistence.DBAgent;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -118,6 +118,7 @@ public class Utils {
     }
 
     public static long logEvent(EventCategory category, EventAction action, String argument) {
+        Logger.getLogger("RootIO").logp(Level.INFO, category.toString(), action.toString(), argument);
         try {
             HashMap<String, Object> values = new HashMap<>();
             values.put("category", category.name());
