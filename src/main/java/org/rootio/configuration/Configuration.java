@@ -25,7 +25,7 @@ public class Configuration {
         }
     }
 
-    public static void saveChanges() throws IOException {
+    public static synchronized void saveChanges() throws IOException {
         properties.store(new FileWriter(new File(configFileLocation)), "");
     }
 

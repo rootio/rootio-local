@@ -5,7 +5,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.rootio.configuration.Configuration;
 import org.rootio.tools.persistence.DBAgent;
+import org.rootio.tools.utils.Utils;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -18,7 +21,6 @@ import java.util.logging.Logger;
 public class MusicListHandler implements SynchronizationHandler {
 
     private int limit = 100;
-    private long maxDateadded;
 
     MusicListHandler() {
     }
@@ -32,32 +34,73 @@ public class MusicListHandler implements SynchronizationHandler {
     public void processJSONResponse(JSONObject synchronizationResponse) {
         try {
             if (synchronizationResponse.getBoolean("status")) {
-                this.logMaxDateAdded(this.maxDateadded);
+                this.logMaxDateAdded(synchronizationResponse.getString("date"));
             }
         } catch (JSONException e) {
             Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[MusicListHandler.processJSONResponse]" : e.getMessage());
         }
     }
 
+
     @Override
     public String getSynchronizationURL() {
-        return String.format("%s://%s:%s/%s/%s/music?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version"));
+        if (isSyncDue()) {
+            return String.format("%s://%s:%s/%s/%s/music?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version"));
+        } else {
+            return null;
+        }
     }
 
-    private long getMaxDateAdded() {
-        return Long.parseLong(Configuration.getProperty("media_max_date_added", "0"));
+    private boolean isSyncDue() {
+        List<List<Object>> result = getMediaStatus();
+        if (result == null) {
+            return false; //something wrong, needs looking into
+        }
+        String response = Utils.doPostHTTP(getPreSynchronizationURL(), "");
+        JSONObject status = new JSONObject(response);
+
+        //if the number of songs, albums or artists is different from what is on the server
+        //and the sync date is different from what is on the server, a sync is in order
+        boolean syncDue = !(status.getJSONObject("songs").getLong("count") == (long) result.get(0).get(0) && status.getJSONObject("songs").getString("max_date").equals(getMaxDateAdded())
+                && status.getJSONObject("albums").getLong("count") == (long) result.get(0).get(1) && status.getJSONObject("albums").getString("max_date").equals(getMaxDateAdded())
+                && status.getJSONObject("artists").getLong("count") == (long) result.get(0).get(2) && status.getJSONObject("artists").getString("max_date").equals(getMaxDateAdded()));
+        Logger.getLogger("RootIO").log(Level.INFO, "Media Sync Due: " + syncDue +" ( " + status +" ) and " + result.get(0) +", "+getMaxDateAdded());
+        return syncDue;
     }
 
-    private void logMaxDateAdded(long maxDate) {
-        Configuration.setProperty("media_max_date_added", String.valueOf(maxDate));
+    private String getPreSynchronizationURL() {
+        return String.format("%s://%s:%s/%s/%s/music_status?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version"));
+    }
+
+    private String getMaxDateAdded() {
+        String maxDate = Configuration.getProperty("media_max_date_added", "0");
+        return maxDate.contains(".") ? maxDate.substring(0, maxDate.indexOf(".")) : maxDate;
+    }
+
+    private void logMaxDateAdded(String maxDate) {
+        Configuration.setProperty("media_max_date_added", maxDate);
+        try {
+            Configuration.saveChanges();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private List<List<Object>> getMediaStatus() {
+        String query = "select count(distinct title), count(distinct album), count(distinct artist) from media";
+        List<String> whereArgs = Collections.emptyList();
+        try {
+            return DBAgent.getData(query, whereArgs);
+        } catch (SQLException throwables) {
+            return null;
+        }
     }
 
     private JSONObject getSongList() {
         JSONObject music = new JSONObject();
         try {
-            this.maxDateadded = this.getMaxDateAdded();
-            String query = "select title, album, artist, duration, date_added, date_modified from media where date_added > ? order by title asc";
-            List<String> whereArgs = Collections.singletonList(String.valueOf(this.maxDateadded));
+            String query = "select title, album, artist, duration, date_added, date_modified from media order by title asc";
+            List<String> whereArgs = Collections.emptyList();
             List<List<Object>> results = DBAgent.getData(query, whereArgs);
             long dateAdded = 0;
 
@@ -68,9 +111,6 @@ public class MusicListHandler implements SynchronizationHandler {
                     song.put("duration", row.get(3));
                     song.put("date_added", row.get(4));
                     song.put("date_modified", row.get(5));
-                    if (dateAdded > maxDateadded) {
-                        maxDateadded = dateAdded;
-                    }
 
                     String artist = row.get(2) == null ? "unknown" : (String) row.get(2);
                     artist = artist.replace("\u2019", "'").replace("\u2018", "'");

@@ -135,12 +135,14 @@ public class SynchronizationDaemon implements Runnable {
     public void synchronize(final SynchronizationHandler handler, Integer id) {
         try {
             String synchronizationUrl = handler.getSynchronizationURL();
-            HashMap<String, Object> response = Utils.doDetailedPostHTTP(synchronizationUrl, handler.getSynchronizationData().toString());
-            JSONObject responseJSON;
-            assert response != null;
-            responseJSON = new JSONObject((String) response.get("response"));
-            handler.processJSONResponse(responseJSON);
-            Utils.logEvent(EventCategory.SYNC, EventAction.START, String.format("length: %s, response code: %s, duration: %s, url: %s", response.get("length"), response.get("responseCode"), response.get("duration"), response.get("url")));
+            if(synchronizationUrl != null) {
+                HashMap<String, Object> response = Utils.doDetailedPostHTTP(synchronizationUrl, handler.getSynchronizationData().toString());
+                JSONObject responseJSON;
+                assert response != null;
+                responseJSON = new JSONObject((String) response.get("response"));
+                handler.processJSONResponse(responseJSON);
+                Utils.logEvent(EventCategory.SYNC, EventAction.START, String.format("length: %s, response code: %s, duration: %s, url: %s", response.get("length"), response.get("responseCode"), response.get("duration"), response.get("url")));
+            }
         } catch (Exception e) {
             this.syncLocks.remove(id);
             Logger.getLogger("RootIO").log(Level.WARNING, e.getMessage() == null ? "Null pointer[SynchronizationDaemon.synchronize]" : e.getMessage());
