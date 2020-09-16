@@ -60,23 +60,22 @@ public class SIPService implements RootioService {
 
     private void restartTwinkle() {
         try {
-            Runtime.getRuntime().exec("/usr/bin/killall -9 twinkle");
+            Runtime.getRuntime().exec("service twinkle stop");
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        new Thread(() -> {
-            try {
-                Process proc = Runtime.getRuntime().exec(String.format("/usr/bin/twinkle -c -f %s", Configuration.getProperty("twinkle_config_path")));
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }).start();
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            Runtime.getRuntime().exec("service twinkle start");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void writeTwinkleConfig() throws IOException {
