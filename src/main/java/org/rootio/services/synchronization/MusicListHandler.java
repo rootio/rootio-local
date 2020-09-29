@@ -102,7 +102,6 @@ public class MusicListHandler implements SynchronizationHandler {
             String query = "select title, album, artist, duration, date_added, date_modified from media order by title asc";
             List<String> whereArgs = Collections.emptyList();
             List<List<Object>> results = DBAgent.getData(query, whereArgs);
-            long dateAdded = 0;
 
             results.forEach(row -> {
                 try {
