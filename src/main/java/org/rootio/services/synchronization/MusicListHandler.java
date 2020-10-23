@@ -45,7 +45,7 @@ public class MusicListHandler implements SynchronizationHandler {
     @Override
     public String getSynchronizationURL() {
         if (isSyncDue()) {
-            return String.format("%s://%s:%s/%s/%s/music?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version"));
+            return String.format("%s://%s:%s/%s/%s/music?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getBuildName(), Configuration.getBuildNumber());
         } else {
             return null;
         }
@@ -69,7 +69,7 @@ public class MusicListHandler implements SynchronizationHandler {
     }
 
     private String getPreSynchronizationURL() {
-        return String.format("%s://%s:%s/%s/%s/music_status?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getProperty("build_version"), Configuration.getProperty("build_version"));
+        return String.format("%s://%s:%s/%s/%s/music_status?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("server_key"), Configuration.getBuildName(), Configuration.getBuildNumber());
     }
 
     private String getMaxDateAdded() {

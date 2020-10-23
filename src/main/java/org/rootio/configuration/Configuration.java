@@ -6,6 +6,8 @@ import java.util.Properties;
 public class Configuration {
     private static Properties properties;
     private static String configFileLocation;
+    private static final String buildName = "Coronoid_automn-pi";
+    private static final String buildNumber = "1.5";
 
 
     public static void load(String fileLocation) throws FileNotFoundException {
@@ -50,5 +52,14 @@ public class Configuration {
     public static boolean isSet(String property)
     {
         return properties.containsKey(property);
+    }
+
+    public final static String getBuildName() {
+        return buildName;
+    }
+
+    public final static String getBuildNumber()
+    {
+        return buildNumber;
     }
 }

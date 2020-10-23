@@ -88,6 +88,6 @@ public class CallLogHandler implements SynchronizationHandler {
 
     @Override
     public String getSynchronizationURL() {
-        return String.format("%s://%s:%s/%s/%s/call?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("Station_key"), Configuration.getProperty("version_name"), Configuration.getProperty("version_code"));
+        return String.format("%s://%s:%s/%s/%s/call?api_key=%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"), Configuration.getProperty("Station_key"), Configuration.getBuildName(), Configuration.getBuildNumber());
     }
 }

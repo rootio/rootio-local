@@ -114,7 +114,7 @@ public class ProgramsHandler implements SynchronizationHandler {
 
     @Override
     public String getSynchronizationURL() {
-        return String.format("%s://%s:%s/%s/%s/programs?api_key=%s&%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"),  Configuration.getProperty("server_key"),getSincePart(), Configuration.getProperty("build_version"), Configuration.getProperty("build_version"));
+        return String.format("%s://%s:%s/%s/%s/programs?api_key=%s&%s&version=%s_%s", Configuration.getProperty("server_scheme"), Configuration.getProperty("server_address"), Configuration.getProperty("http_port"), "api/station", Configuration.getProperty("station_id"),  Configuration.getProperty("server_key"),getSincePart(), Configuration.getBuildName(), Configuration.getBuildNumber());
     }
 
     private String getSincePart() {
