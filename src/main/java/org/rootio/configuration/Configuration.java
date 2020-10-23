@@ -26,7 +26,9 @@ public class Configuration {
     }
 
     public static synchronized void saveChanges() throws IOException {
-        properties.store(new FileWriter(new File(configFileLocation)), "");
+        if(!properties.isEmpty()) {
+            properties.store(new FileWriter(new File(configFileLocation)), "");
+        }
     }
 
     public static String getProperty(String property)
